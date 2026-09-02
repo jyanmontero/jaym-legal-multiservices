@@ -6,6 +6,16 @@ import {
   IsEmail,
   ValidateIf,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
+
+// El frontend a veces manda "" (cadena vacia) en vez de omitir un campo
+// opcional cuando el usuario deja una casilla en blanco. @IsOptional() de
+// class-validator solo se salta la validacion si el valor es null/undefined,
+// no si es "" — sin este Transform, un correo vacio caia en @IsEmail() y
+// tiraba el error tecnico "correo must be an email" en vez de simplemente
+// aceptarse como "no se dio correo". Mismo criterio aplicado en UpdateClienteDto.
+const vacioComoIndefinido = ({ value }: { value: unknown }) =>
+  value === '' ? undefined : value;
 import { TipoCliente, EstadoCivil, EstadoCliente } from '../../common/enums/index.js';
 
 export class CreateClienteDto {
@@ -86,6 +96,7 @@ export class CreateClienteDto {
   telefonos?: string[];
 
   @IsOptional()
+  @Transform(vacioComoIndefinido)
   @IsEmail()
   correo?: string;
 
@@ -120,7 +131,7 @@ export class UpdateClienteDto {
   @IsOptional() @IsString() nacionalidad?: string;
   @IsOptional() @IsString() direccion?: string;
   @IsOptional() @IsArray() telefonos?: string[];
-  @IsOptional() @IsEmail() correo?: string;
+  @IsOptional() @Transform(vacioComoIndefinido) @IsEmail() correo?: string;
   @IsOptional() @IsString() personaContacto?: string;
   @IsOptional() @IsString() observaciones?: string;
   @IsOptional() @IsEnum(EstadoCliente) estado?: EstadoCliente;
