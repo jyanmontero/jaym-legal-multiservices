@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+storage/documentos/
+_pruebas_borrar/
+*.log
+.DS_Store
+prueba-factura-TEST.pdf
+.pdf-preview-tmp/
