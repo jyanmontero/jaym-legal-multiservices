@@ -229,6 +229,31 @@ export const ROLES_CON_ACCESO_FACTURACION = [
   RolUsuario.FACTURACION_CONTABILIDAD,
 ];
 
+// --- Plantillas de documentos (contratos, poderes, etc. rellenables) ---
+export enum EstadoSolicitudDocumento {
+  PENDIENTE_CLIENTE = 'pendiente_cliente',
+  PENDIENTE_APROBACION = 'pendiente_aprobacion',
+  APROBADO = 'aprobado',
+  RECHAZADO = 'rechazado',
+}
+
+// Roles que pueden crear una solicitud de documento (elegir la plantilla,
+// vincularla a un cliente/expediente y generar el enlace público) y verla
+// en el listado interno. La aprobación final -- la que efectivamente genera
+// el PDF -- queda restringida a un grupo más pequeño (ver abajo), porque es
+// la firma final de la oficina sobre el contenido del documento.
+export const ROLES_CON_ACCESO_PLANTILLAS = [
+  RolUsuario.SUPERADMINISTRADOR,
+  RolUsuario.ABOGADO_ADMINISTRADOR,
+  RolUsuario.ABOGADO_ASOCIADO,
+  RolUsuario.ASISTENTE_PARALEGAL,
+];
+
+export const ROLES_QUE_APRUEBAN_PLANTILLAS = [
+  RolUsuario.SUPERADMINISTRADOR,
+  RolUsuario.ABOGADO_ADMINISTRADOR,
+];
+
 // Tasa de ITBIS estándar en República Dominicana. Algunos servicios pueden
 // estar exentos o llevar una tasa distinta — por eso cada factura/cotización
 // permite desactivarlo (aplicaItbis: false) en vez de asumirlo siempre.
