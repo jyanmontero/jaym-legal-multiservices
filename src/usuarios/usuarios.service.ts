@@ -1,6 +1,6 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Usuario } from './usuario.entity.js';
 import { CreateUsuarioDto } from './dto/create-usuario.dto.js';
@@ -19,6 +19,8 @@ export class UsuariosService {
     private readonly usuarioRepo: Repository<Usuario>,
     private readonly historialCambiosService: HistorialCambiosService,
     private readonly cifradoService: CifradoService,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
   ) {}
 
   private aPublico(usuario: Usuario): UsuarioPublico {
@@ -111,16 +113,20 @@ export class UsuariosService {
 
   async cambiarEstado(id: string, estado: EstadoUsuario, usuarioId: string): Promise<UsuarioPublico> {
     const anterior = await this.buscarPorId(id);
-    await this.usuarioRepo.update(id, { estado });
-    const actualizado = await this.buscarPorId(id);
-    await this.historialCambiosService.registrarCambio({
-      entidadTipo: 'usuario',
-      entidadId: id,
-      snapshotAnterior: { estado: anterior.estado },
-      snapshotNuevo: { estado: actualizado.estado },
-      usuarioId,
+    await this.dataSource.transaction(async (manager) => {
+      await manager.getRepository(Usuario).update(id, { estado });
+      await this.historialCambiosService.registrarCambio(
+        {
+          entidadTipo: 'usuario',
+          entidadId: id,
+          snapshotAnterior: { estado: anterior.estado },
+          snapshotNuevo: { estado },
+          usuarioId,
+        },
+        manager,
+      );
     });
-    return actualizado;
+    return this.buscarPorId(id);
   }
 
   /**
@@ -130,15 +136,20 @@ export class UsuariosService {
   async resetearPassword(id: string, nuevaPassword: string, usuarioId: string): Promise<UsuarioPublico> {
     await this.buscarPorId(id); // valida que exista (lanza 404 si no)
     const passwordHash = await bcrypt.hash(nuevaPassword, SALT_ROUNDS);
-    await this.usuarioRepo.update(id, { passwordHash });
-    await this.historialCambiosService.registrarCambio({
-      entidadTipo: 'usuario',
-      entidadId: id,
-      snapshotAnterior: {},
-      snapshotNuevo: {},
-      camposModificados: ['contraseña'],
-      usuarioId,
-      motivo: 'Contraseña restablecida por un administrador',
+    await this.dataSource.transaction(async (manager) => {
+      await manager.getRepository(Usuario).update(id, { passwordHash });
+      await this.historialCambiosService.registrarCambio(
+        {
+          entidadTipo: 'usuario',
+          entidadId: id,
+          snapshotAnterior: {},
+          snapshotNuevo: {},
+          camposModificados: ['contraseña'],
+          usuarioId,
+          motivo: 'Contraseña restablecida por un administrador',
+        },
+        manager,
+      );
     });
     return this.buscarPorId(id);
   }

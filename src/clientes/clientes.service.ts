@@ -3,8 +3,8 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Cliente } from './cliente.entity.js';
 import { CreateClienteDto, UpdateClienteDto } from './dto/create-cliente.dto.js';
 import { EstadoCliente, TipoCliente } from '../common/enums/index.js';
@@ -21,6 +21,8 @@ export class ClientesService {
     @InjectRepository(Cliente)
     private readonly clienteRepo: Repository<Cliente>,
     private readonly historialCambiosService: HistorialCambiosService,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
   ) {}
 
   /**
@@ -130,6 +132,14 @@ export class ClientesService {
     return cliente;
   }
 
+  /**
+   * REGLA: la actualización del cliente y el registro en el historial de
+   * cambios ocurren en una misma transacción -- mismo criterio que
+   * ExpedientesService.actualizar y FacturacionService.actualizarFactura.
+   * Si el historial no se pudiera guardar, el cambio al cliente tampoco
+   * queda aplicado (antes quedaban desacopladas: un fallo del historial no
+   * revertía el cambio ya guardado, perdiendo el rastro sin avisar).
+   */
   async actualizar(id: string, dto: UpdateClienteDto, usuarioId?: string): Promise<Cliente> {
     const cliente = await this.obtenerPorId(id);
     const snapshotAnterior = { ...cliente };
@@ -150,20 +160,26 @@ export class ClientesService {
       }
     }
 
-    this.clienteRepo.merge(cliente, dto);
-    const guardado = await this.clienteRepo.save(cliente);
+    return this.dataSource.transaction(async (manager) => {
+      const clienteRepo = manager.getRepository(Cliente);
+      clienteRepo.merge(cliente, dto);
+      const guardado = await clienteRepo.save(cliente);
 
-    if (usuarioId) {
-      await this.historialCambiosService.registrarCambio({
-        entidadTipo: 'cliente',
-        entidadId: id,
-        snapshotAnterior,
-        snapshotNuevo: { ...guardado },
-        usuarioId,
-      });
-    }
+      if (usuarioId) {
+        await this.historialCambiosService.registrarCambio(
+          {
+            entidadTipo: 'cliente',
+            entidadId: id,
+            snapshotAnterior,
+            snapshotNuevo: { ...guardado },
+            usuarioId,
+          },
+          manager,
+        );
+      }
 
-    return guardado;
+      return guardado;
+    });
   }
 
   async historial(id: string) {

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 
@@ -21,8 +21,12 @@ export class CifradoService {
   private clave(): Buffer {
     const passphrase = this.config.get<string>('DOS_FACTOR_CLAVE_CIFRADO');
     if (!passphrase) {
-      throw new Error(
-        'Falta configurar DOS_FACTOR_CLAVE_CIFRADO en el .env -- es obligatoria para activar o verificar 2FA.',
+      // Excepción de Nest (no un Error genérico) para que el filtro global
+      // la convierta en una respuesta HTTP consistente en vez de un 500 sin
+      // contexto -- ver DEPLOY.md, DOS_FACTOR_CLAVE_CIFRADO es obligatoria
+      // en producción si algún usuario va a activar 2FA.
+      throw new InternalServerErrorException(
+        'El servidor no tiene configurada la clave de cifrado de 2FA (DOS_FACTOR_CLAVE_CIFRADO). Contacta al administrador del sistema.',
       );
     }
     return crypto.createHash('sha256').update(passphrase).digest();
@@ -57,11 +61,12 @@ export class CifradoService {
         decipher.update(Buffer.from(cifradoB64, 'base64')),
         decipher.final(),
       ]).toString('utf8');
-    } catch {
+    } catch (err) {
+      if (err instanceof InternalServerErrorException) throw err;
       // Si algo con esa forma no descifra (clave distinta, dato corrupto),
       // no hay forma segura de recuperarlo -- mejor fallar la verificación
       // del código 2FA que devolver un secreto incorrecto silenciosamente.
-      throw new Error('No se pudo descifrar el secreto de 2FA');
+      throw new InternalServerErrorException('No se pudo descifrar el secreto de 2FA.');
     }
   }
 }

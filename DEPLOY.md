@@ -62,6 +62,13 @@ El resto (HubSpot, Google Calendar, el asistente de IA, las alertas por
 correo) son integraciones opcionales -- si se dejan vacías, esa función
 específica simplemente no hace nada, sin romper el resto del sistema.
 
+**Aparte, con una regla distinta:** `DOS_FACTOR_CLAVE_CIFRADO` (cifra el
+secreto de 2FA en reposo) no es parte del arranque mínimo, pero a
+diferencia de las integraciones opcionales de arriba, si algún usuario
+intenta activar o usar 2FA sin que esta variable esté configurada, esa
+acción falla con un error explícito en vez de no hacer nada en silencio.
+Conviene configurarla desde el principio si 2FA se va a ofrecer alguna vez.
+
 ## El almacenamiento de documentos
 
 Los documentos subidos (`storage/documentos/`) se guardan en disco, no en
