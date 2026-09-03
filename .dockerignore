@@ -1,0 +1,12 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+*.log
+storage/documentos
+_pruebas_borrar
+.pdf-preview-tmp
+.git
+.DS_Store
+scripts/estado-migracion.json

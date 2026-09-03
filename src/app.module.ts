@@ -37,14 +37,26 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard.js';
         // requerir configuración manual extra; en Postgres local no aplica.
         const requiereSSL = /sslmode=require|neon\.tech|supabase\.co|render\.com/.test(databaseUrl);
 
+        const esProduccion = config.get('NODE_ENV') === 'production';
+
         return {
           type: 'postgres',
           url: databaseUrl,
           autoLoadEntities: true,
-          // synchronize solo debe usarse en desarrollo. En producción se
-          // deben usar migraciones (ver carpeta src/migrations, pendiente
-          // de generar con `npm run typeorm migration:generate`).
-          synchronize: config.get('NODE_ENV') !== 'production',
+          // synchronize solo debe usarse en desarrollo -- crea/ajusta las
+          // tablas automáticamente a partir de las entidades, sin quedar
+          // registrado en ningún lado. En producción eso es peligroso (un
+          // cambio de columna podría perder datos sin aviso), así que ahí
+          // se apaga y en su lugar se usan migraciones versionadas
+          // (carpeta src/migrations/, generadas con `npm run
+          // migration:generate`).
+          synchronize: !esProduccion,
+          // En producción, las migraciones pendientes se aplican solas al
+          // arrancar -- no hace falta un paso manual de despliegue aparte.
+          // `npm run migration:run` sigue disponible para aplicarlas a
+          // mano si se prefiere (por ejemplo, antes de arrancar el server).
+          migrationsRun: esProduccion,
+          migrations: esProduccion ? ['dist/migrations/*.js'] : undefined,
           logging: config.get('NODE_ENV') === 'development',
           ssl: requiereSSL ? { rejectUnauthorized: false } : false,
         };
