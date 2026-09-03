@@ -30,3 +30,18 @@ export class CambiarPasswordDto {
   @MinLength(8, { message: 'La nueva contraseña debe tener al menos 8 caracteres' })
   nueva: string;
 }
+
+export class OlvidePasswordDto {
+  @IsEmail()
+  correo: string;
+}
+
+export class RestablecerPasswordDto {
+  @IsString()
+  @MinLength(1)
+  token: string;
+
+  @IsString()
+  @MinLength(8, { message: 'La nueva contraseña debe tener al menos 8 caracteres' })
+  nuevaPassword: string;
+}

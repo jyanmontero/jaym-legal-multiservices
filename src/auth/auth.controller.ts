@@ -1,7 +1,13 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { AuthService } from './auth.service.js';
 import { UsuariosService } from '../usuarios/usuarios.service.js';
-import { LoginDto, VerificarDosFactorDto, CambiarPasswordDto } from './dto/auth.dto.js';
+import {
+  LoginDto,
+  VerificarDosFactorDto,
+  CambiarPasswordDto,
+  OlvidePasswordDto,
+  RestablecerPasswordDto,
+} from './dto/auth.dto.js';
 import { CreateUsuarioDto } from '../usuarios/dto/create-usuario.dto.js';
 import { CurrentUser } from './decorators/current-user.decorator.js';
 import { Public } from './decorators/public.decorator.js';
@@ -66,5 +72,22 @@ export class AuthController {
     @Body() dto: CambiarPasswordDto,
   ) {
     return this.authService.cambiarPassword(usuarioId, dto.actual, dto.nueva);
+  }
+
+  // Límite bajo a propósito: cada solicitud manda un correo real -- sin
+  // esto, alguien podría usar este endpoint para bombardear la bandeja de
+  // entrada de otra persona.
+  @Throttle({ default: { limit: 3, ttl: 300000 } })
+  @Public()
+  @Post('olvide-password')
+  olvidePassword(@Body() dto: OlvidePasswordDto) {
+    return this.authService.solicitarRestablecerPassword(dto.correo);
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Public()
+  @Post('restablecer-password')
+  restablecerPassword(@Body() dto: RestablecerPasswordDto) {
+    return this.authService.restablecerPassword(dto.token, dto.nuevaPassword);
   }
 }
