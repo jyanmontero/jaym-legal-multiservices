@@ -5,6 +5,7 @@ import { DocumentosService } from '../documentos/documentos.service.js';
 import { CrearSolicitudDocumentoDto } from './dto/crear-solicitud.dto.js';
 import { CompletarSolicitudDto } from './dto/completar-solicitud.dto.js';
 import { RevisarSolicitudDocumentoDto } from './dto/revisar-solicitud.dto.js';
+import { ConfirmarPagoDto } from './dto/confirmar-pago.dto.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 import { Public } from '../auth/decorators/public.decorator.js';
@@ -76,6 +77,18 @@ export class SolicitudesDocumentoController {
 
   // Aprobar o pedir correcciones -- restringido a un grupo más pequeño de
   // roles que el resto del módulo (ver ROLES_QUE_APRUEBAN_PLANTILLAS).
+  // Marcar que el pago de esta solicitud ya fue recibido (transferencia
+  // verificada manualmente, efectivo en oficina, etc.) -- abierto al mismo
+  // grupo de roles que gestiona las solicitudes, no solo a quien aprueba.
+  @Patch(':id/confirmar-pago')
+  confirmarPago(
+    @Param('id') id: string,
+    @Body() dto: ConfirmarPagoDto,
+    @CurrentUser('sub') usuarioId: string,
+  ) {
+    return this.plantillasService.confirmarPago(id, dto, usuarioId);
+  }
+
   @Patch(':id/revisar')
   @UseGuards(RolesGuard)
   @Roles(...ROLES_QUE_APRUEBAN_PLANTILLAS)

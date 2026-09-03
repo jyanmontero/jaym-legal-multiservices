@@ -61,6 +61,23 @@ export class SolicitudDocumento {
   @Column()
   creadoPorId: string;
 
+  // Precio copiado del catálogo al momento de crear la solicitud (ver nota
+  // en plantillas-catalogo.ts). RD$.
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  precio: string;
+
+  @Column({ default: false })
+  pagoConfirmado: boolean;
+
+  @Column({ type: 'timestamp', nullable: true })
+  pagoConfirmadoEn?: Date;
+
+  @Column({ nullable: true })
+  pagoConfirmadoPorId?: string;
+
+  @Column({ nullable: true })
+  referenciaPago?: string;
+
   @Column('text', { nullable: true })
   notasInternas?: string;
 

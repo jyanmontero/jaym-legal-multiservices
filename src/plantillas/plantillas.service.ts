@@ -10,6 +10,7 @@ import { CARPETA_ALMACENAMIENTO } from '../documentos/documentos.service.js';
 import { CrearSolicitudDocumentoDto } from './dto/crear-solicitud.dto.js';
 import { CompletarSolicitudDto } from './dto/completar-solicitud.dto.js';
 import { RevisarSolicitudDocumentoDto } from './dto/revisar-solicitud.dto.js';
+import { ConfirmarPagoDto } from './dto/confirmar-pago.dto.js';
 import {
   CATALOGO_PLANTILLAS,
   obtenerPlantilla,
@@ -18,6 +19,7 @@ import {
 } from './plantillas-catalogo.js';
 import { PlantillaPdfService } from './pdf/plantilla-pdf.service.js';
 import { EstadoSolicitudDocumento, CategoriaDocumento, TipoCliente } from '../common/enums/index.js';
+import { MARCA_CORPORATIVA, CUENTAS_BANCARIAS } from '../common/constants/marca-corporativa.js';
 
 @Injectable()
 export class PlantillasService {
@@ -32,12 +34,18 @@ export class PlantillasService {
   ) {}
 
   listarCatalogo() {
-    return CATALOGO_PLANTILLAS.map(({ clave, nombre, descripcion, campos }) => ({
+    return CATALOGO_PLANTILLAS.map(({ clave, nombre, descripcion, precio, campos }) => ({
       clave,
       nombre,
       descripcion,
+      precio,
       campos,
     }));
+  }
+
+  /** Datos de pago -- cuentas bancarias y contacto -- para mostrar al cliente. */
+  private datosPago() {
+    return { cuentas: CUENTAS_BANCARIAS, telefono: MARCA_CORPORATIVA.telefono };
   }
 
   private generarToken(): string {
@@ -66,6 +74,7 @@ export class PlantillasService {
       notasInternas: dto.notasInternas,
       tokenAcceso: this.generarToken(),
       creadoPorId: usuarioId,
+      precio: plantilla.precio.toFixed(2),
     });
     const guardada = await this.solicitudRepo.save(solicitud);
     return { solicitud: guardada, enlacePublico: this.construirEnlacePublico(guardada.tokenAcceso) };
@@ -107,6 +116,9 @@ export class PlantillasService {
       plantilla: { nombre: plantilla.nombre, descripcion: plantilla.descripcion, campos: plantilla.campos },
       datos: solicitud.datos,
       estado: solicitud.estado,
+      precio: Number(solicitud.precio),
+      pagoConfirmado: solicitud.pagoConfirmado,
+      pago: Number(solicitud.precio) > 0 ? this.datosPago() : undefined,
       motivoRechazo:
         solicitud.estado === EstadoSolicitudDocumento.PENDIENTE_CLIENTE ? solicitud.motivoRechazo : undefined,
     };
@@ -165,6 +177,11 @@ export class PlantillasService {
     if (faltantes.length > 0) {
       throw new BadRequestException(`No se puede aprobar: faltan campos obligatorios: ${faltantes.join(', ')}`);
     }
+    if (Number(solicitud.precio) > 0 && !solicitud.pagoConfirmado) {
+      throw new BadRequestException(
+        'No se puede aprobar: el pago de este documento aún no ha sido confirmado. Marca el pago como recibido primero.',
+      );
+    }
 
     const cuerpo = renderizarCuerpo(plantilla, solicitud.datos);
     const buffer = await this.pdfService.generarDocumentoPdf(plantilla.nombre, cuerpo);
@@ -193,6 +210,21 @@ export class PlantillasService {
     solicitud.revisadoEn = new Date();
     solicitud.revisadoPorId = usuarioId;
     solicitud.motivoRechazo = null;
+    return this.solicitudRepo.save(solicitud);
+  }
+
+  async confirmarPago(id: string, dto: ConfirmarPagoDto, usuarioId: string): Promise<SolicitudDocumento> {
+    const solicitud = await this.obtener(id);
+    if (
+      solicitud.estado !== EstadoSolicitudDocumento.PENDIENTE_CLIENTE &&
+      solicitud.estado !== EstadoSolicitudDocumento.PENDIENTE_APROBACION
+    ) {
+      throw new BadRequestException('Este documento ya fue aprobado -- no hace falta confirmar el pago de nuevo.');
+    }
+    solicitud.pagoConfirmado = true;
+    solicitud.pagoConfirmadoEn = new Date();
+    solicitud.pagoConfirmadoPorId = usuarioId;
+    solicitud.referenciaPago = dto.referenciaPago;
     return this.solicitudRepo.save(solicitud);
   }
 

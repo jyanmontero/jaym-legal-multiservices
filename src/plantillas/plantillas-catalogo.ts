@@ -25,6 +25,10 @@ export interface PlantillaDocumento {
   clave: string;
   nombre: string;
   descripcion: string;
+  // Precio de venta al público, en RD$. Se copia a la solicitud en el
+  // momento de crearla (ver PlantillasService.crear) para que un cambio de
+  // precio a futuro no altere solicitudes ya generadas.
+  precio: number;
   campos: CampoPlantilla[];
   cuerpo: string;
 }
@@ -34,6 +38,7 @@ export const CATALOGO_PLANTILLAS: PlantillaDocumento[] = [
     clave: 'compraventa_bienes_muebles',
     nombre: 'Contrato de Compraventa de Bienes Muebles',
     descripcion: 'Venta de un bien mueble (vehículo, equipo, mobiliario, etc.) entre dos personas.',
+    precio: 1200,
     campos: [
       { clave: 'vendedorNombre', etiqueta: 'Nombre completo del vendedor', tipo: 'texto', requerido: true },
       { clave: 'vendedorCedula', etiqueta: 'Cédula o pasaporte del vendedor', tipo: 'texto', requerido: true },
@@ -80,6 +85,7 @@ EL VENDEDOR                               EL COMPRADOR`,
     clave: 'alquiler_vivienda',
     nombre: 'Contrato de Alquiler de Vivienda',
     descripcion: 'Arrendamiento de una vivienda entre propietario e inquilino.',
+    precio: 1000,
     campos: [
       { clave: 'arrendadorNombre', etiqueta: 'Nombre completo del arrendador (propietario)', tipo: 'texto', requerido: true },
       { clave: 'arrendadorCedula', etiqueta: 'Cédula o pasaporte del arrendador', tipo: 'texto', requerido: true },
@@ -126,6 +132,7 @@ EL ARRENDADOR                             EL ARRENDATARIO`,
     clave: 'poder_especial',
     nombre: 'Poder Especial de Representación',
     descripcion: 'Autorización a una persona para representar a otra en una gestión específica.',
+    precio: 800,
     campos: [
       { clave: 'poderdanteNombre', etiqueta: 'Nombre completo de quien otorga el poder', tipo: 'texto', requerido: true },
       { clave: 'poderdanteCedula', etiqueta: 'Cédula o pasaporte del poderdante', tipo: 'texto', requerido: true },
@@ -180,6 +187,7 @@ EL APODERADO`,
     clave: 'prestacion_servicios',
     nombre: 'Contrato de Prestación de Servicios Profesionales',
     descripcion: 'Contratación de un servicio profesional entre un prestador y un cliente.',
+    precio: 1500,
     campos: [
       { clave: 'prestadorNombre', etiqueta: 'Nombre o razón social del prestador del servicio', tipo: 'texto', requerido: true },
       { clave: 'prestadorIdentificacion', etiqueta: 'Cédula, pasaporte o RNC del prestador', tipo: 'texto', requerido: true },
@@ -223,6 +231,7 @@ EL PRESTADOR                              EL CLIENTE`,
     clave: 'confidencialidad_nda',
     nombre: 'Acuerdo de Confidencialidad (NDA)',
     descripcion: 'Compromiso de confidencialidad entre dos partes que compartirán información sensible.',
+    precio: 700,
     campos: [
       { clave: 'primeraParteNombre', etiqueta: 'Nombre o razón social de la primera parte', tipo: 'texto', requerido: true },
       { clave: 'primeraParteIdentificacion', etiqueta: 'Cédula, pasaporte o RNC de la primera parte', tipo: 'texto', requerido: true },
