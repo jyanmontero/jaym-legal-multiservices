@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RequisitoPlantilla } from './requisito-plantilla.entity.js';
-import { CreateRequisitoPlantillaDto } from './dto/requisito.dto.js';
+import { CreateRequisitoPlantillaDto, UpdateRequisitoPlantillaDto } from './dto/requisito.dto.js';
 import { MateriaJuridica } from '../common/enums/index.js';
 
 @Injectable()
@@ -19,6 +19,13 @@ export class RequisitosPlantillaService {
       orden: dto.orden ?? 0,
       activo: true,
     });
+    return this.plantillaRepo.save(plantilla);
+  }
+
+  async actualizar(id: string, dto: UpdateRequisitoPlantillaDto): Promise<RequisitoPlantilla> {
+    const plantilla = await this.plantillaRepo.findOne({ where: { id } });
+    if (!plantilla) throw new NotFoundException('Plantilla de requisito no encontrada');
+    this.plantillaRepo.merge(plantilla, dto);
     return this.plantillaRepo.save(plantilla);
   }
 

@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { RequisitosPlantillaService } from './requisitos-plantilla.service.js';
-import { CreateRequisitoPlantillaDto } from './dto/requisito.dto.js';
+import { CreateRequisitoPlantillaDto, UpdateRequisitoPlantillaDto } from './dto/requisito.dto.js';
 import { MateriaJuridica, RolUsuario } from '../common/enums/index.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
@@ -23,6 +23,13 @@ export class RequisitosPlantillaController {
   @Roles(RolUsuario.SUPERADMINISTRADOR, RolUsuario.ABOGADO_ADMINISTRADOR)
   crear(@Body() dto: CreateRequisitoPlantillaDto) {
     return this.plantillaService.crear(dto);
+  }
+
+  @Patch(':id')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.SUPERADMINISTRADOR, RolUsuario.ABOGADO_ADMINISTRADOR)
+  actualizar(@Param('id') id: string, @Body() dto: UpdateRequisitoPlantillaDto) {
+    return this.plantillaService.actualizar(id, dto);
   }
 
   @Delete(':id')

@@ -32,6 +32,33 @@ export class CreateRequisitoPlantillaDto {
   orden?: number;
 }
 
+// Edición de una plantilla ya creada -- mismo criterio de roles que crear
+// y desactivar (ver RequisitosPlantillaController). No incluye "activo":
+// para eso sigue existiendo el endpoint desactivar (que además preserva la
+// intención -- una plantilla desactivada no debería "revivir" por accidente
+// al editar otro campo).
+export class UpdateRequisitoPlantillaDto {
+  @IsOptional()
+  @IsString()
+  tipoServicio?: string;
+
+  @IsOptional()
+  @IsString()
+  nombreRequisito?: string;
+
+  @IsOptional()
+  @IsString()
+  descripcion?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  obligatorio?: boolean;
+
+  @IsOptional()
+  @IsInt()
+  orden?: number;
+}
+
 export class CrearRequisitoManualDto {
   @IsString()
   nombreRequisito: string;
