@@ -30,9 +30,10 @@ export class ExpedientesController {
     @Query('estado') estado?: string,
     @Query('materia') materia?: string,
     @Query('clienteId') clienteId?: string,
+    @Query('q') q?: string,
   ) {
     return this.expedientesService.listar(
-      { estado, materia, clienteId },
+      { estado, materia, clienteId, q },
       { id: usuario.sub, rol: usuario.rol as RolUsuario },
     );
   }

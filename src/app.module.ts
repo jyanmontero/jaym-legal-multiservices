@@ -16,6 +16,7 @@ import { HubSpotModule } from './integraciones/hubspot/hubspot.module.js';
 import { GoogleCalendarModule } from './integraciones/google-calendar/google-calendar.module.js';
 import { AsistenteModule } from './asistente/asistente.module.js';
 import { PlantillasModule } from './plantillas/plantillas.module.js';
+import { BusquedaModule } from './busqueda/busqueda.module.js';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard.js';
@@ -76,6 +77,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard.js';
     GoogleCalendarModule,
     AsistenteModule,
     PlantillasModule,
+    BusquedaModule,
   ],
   providers: [
     // Guard global de límite de peticiones (debe ir antes que el de JWT

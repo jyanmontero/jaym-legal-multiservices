@@ -15,6 +15,7 @@ import { CreateFacturaDto, UpdateFacturaDto } from './dto/factura.dto.js';
 import { CreatePagoDto } from './dto/pago.dto.js';
 import { calcularTotales } from './item-facturable.js';
 import { EstadoCotizacion, EstadoFactura, TipoCliente } from '../common/enums/index.js';
+import { HistorialCambiosService } from '../historial-cambios/historial-cambios.service.js';
 
 function hoyISO(): string {
   return new Date().toISOString().slice(0, 10);
@@ -42,6 +43,7 @@ export class FacturacionService {
     private readonly expedienteRepo: Repository<Expediente>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    private readonly historialCambiosService: HistorialCambiosService,
   ) {}
 
   // --- Numeración ---------------------------------------------------------
@@ -276,7 +278,7 @@ export class FacturacionService {
    * recalculan subtotal/itbis/total, y el estado se vuelve a derivar
    * comparando el nuevo total contra el monto ya pagado.
    */
-  async actualizarFactura(id: string, dto: UpdateFacturaDto): Promise<Factura> {
+  async actualizarFactura(id: string, dto: UpdateFacturaDto, usuarioId: string): Promise<Factura> {
     return this.dataSource.transaction(async (manager) => {
       const facturaRepo = manager.getRepository(Factura);
       const factura = await facturaRepo.findOne({ where: { id } });
@@ -284,6 +286,7 @@ export class FacturacionService {
       if (factura.estado === EstadoFactura.ANULADA) {
         throw new BadRequestException('No se puede editar una factura anulada.');
       }
+      const snapshotAnterior = { ...factura };
 
       const items = dto.items ?? factura.items;
       const aplicaItbisGeneral = dto.aplicaItbis ?? factura.aplicaItbis;
@@ -327,11 +330,22 @@ export class FacturacionService {
       if (factura.expedienteId) {
         await this.recalcularBalanceExpediente(factura.expedienteId, manager);
       }
-      return facturaRepo.findOne({ where: { id } }) as Promise<Factura>;
+      const actualizada = (await facturaRepo.findOne({ where: { id } })) as Factura;
+      await this.historialCambiosService.registrarCambio(
+        {
+          entidadTipo: 'factura',
+          entidadId: id,
+          snapshotAnterior,
+          snapshotNuevo: { ...actualizada },
+          usuarioId,
+        },
+        manager,
+      );
+      return actualizada;
     });
   }
 
-  async anularFactura(id: string): Promise<Factura> {
+  async anularFactura(id: string, usuarioId: string): Promise<Factura> {
     return this.dataSource.transaction(async (manager) => {
       const repo = manager.getRepository(Factura);
       const factura = await repo.findOne({ where: { id } });
@@ -345,8 +359,25 @@ export class FacturacionService {
       if (factura.expedienteId) {
         await this.recalcularBalanceExpediente(factura.expedienteId, manager);
       }
-      return repo.findOne({ where: { id } }) as Promise<Factura>;
+      const anulada = (await repo.findOne({ where: { id } })) as Factura;
+      await this.historialCambiosService.registrarCambio(
+        {
+          entidadTipo: 'factura',
+          entidadId: id,
+          snapshotAnterior: { estado: factura.estado },
+          snapshotNuevo: { estado: anulada.estado },
+          usuarioId,
+          motivo: 'Factura anulada',
+        },
+        manager,
+      );
+      return anulada;
     });
+  }
+
+  async historialFactura(id: string) {
+    await this.obtenerFactura(id); // 404 si no existe
+    return this.historialCambiosService.listarPorEntidad('factura', id);
   }
 
   // --- Pagos --------------------------------------------------------

@@ -5,6 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { Usuario } from './usuario.entity.js';
 import { CreateUsuarioDto } from './dto/create-usuario.dto.js';
 import { EstadoUsuario, RolUsuario } from '../common/enums/index.js';
+import { HistorialCambiosService } from '../historial-cambios/historial-cambios.service.js';
 
 const SALT_ROUNDS = 12;
 
@@ -15,6 +16,7 @@ export class UsuariosService {
   constructor(
     @InjectRepository(Usuario)
     private readonly usuarioRepo: Repository<Usuario>,
+    private readonly historialCambiosService: HistorialCambiosService,
   ) {}
 
   private aPublico(usuario: Usuario): UsuarioPublico {
@@ -93,20 +95,43 @@ export class UsuariosService {
     return usuario;
   }
 
-  async cambiarEstado(id: string, estado: EstadoUsuario): Promise<UsuarioPublico> {
+  async cambiarEstado(id: string, estado: EstadoUsuario, usuarioId: string): Promise<UsuarioPublico> {
+    const anterior = await this.buscarPorId(id);
     await this.usuarioRepo.update(id, { estado });
-    return this.buscarPorId(id);
+    const actualizado = await this.buscarPorId(id);
+    await this.historialCambiosService.registrarCambio({
+      entidadTipo: 'usuario',
+      entidadId: id,
+      snapshotAnterior: { estado: anterior.estado },
+      snapshotNuevo: { estado: actualizado.estado },
+      usuarioId,
+    });
+    return actualizado;
   }
 
   /**
    * Cambio de contraseña por un administrador (Superadministrador), sin
    * requerir la contraseña actual — para cuando un usuario la olvidó.
    */
-  async resetearPassword(id: string, nuevaPassword: string): Promise<UsuarioPublico> {
+  async resetearPassword(id: string, nuevaPassword: string, usuarioId: string): Promise<UsuarioPublico> {
     await this.buscarPorId(id); // valida que exista (lanza 404 si no)
     const passwordHash = await bcrypt.hash(nuevaPassword, SALT_ROUNDS);
     await this.usuarioRepo.update(id, { passwordHash });
+    await this.historialCambiosService.registrarCambio({
+      entidadTipo: 'usuario',
+      entidadId: id,
+      snapshotAnterior: {},
+      snapshotNuevo: {},
+      camposModificados: ['contraseña'],
+      usuarioId,
+      motivo: 'Contraseña restablecida por un administrador',
+    });
     return this.buscarPorId(id);
+  }
+
+  async historial(id: string) {
+    await this.buscarPorId(id); // 404 si no existe
+    return this.historialCambiosService.listarPorEntidad('usuario', id);
   }
 
   /**

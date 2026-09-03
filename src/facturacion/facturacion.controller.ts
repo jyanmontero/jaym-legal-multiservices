@@ -129,13 +129,22 @@ export class FacturasController {
   @Patch(':id')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.SUPERADMINISTRADOR)
-  editar(@Param('id') id: string, @Body() dto: UpdateFacturaDto) {
-    return this.facturacionService.actualizarFactura(id, dto);
+  editar(
+    @Param('id') id: string,
+    @Body() dto: UpdateFacturaDto,
+    @CurrentUser('sub') usuarioId: string,
+  ) {
+    return this.facturacionService.actualizarFactura(id, dto, usuarioId);
   }
 
   @Post(':id/anular')
-  anular(@Param('id') id: string) {
-    return this.facturacionService.anularFactura(id);
+  anular(@Param('id') id: string, @CurrentUser('sub') usuarioId: string) {
+    return this.facturacionService.anularFactura(id, usuarioId);
+  }
+
+  @Get(':id/historial')
+  historial(@Param('id') id: string) {
+    return this.facturacionService.historialFactura(id);
   }
 
   // Elimina la factura por completo -- pensada para corregir una que quedó

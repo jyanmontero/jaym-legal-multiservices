@@ -12,9 +12,10 @@ import {
   FacturasController,
   FacturacionController,
 } from './facturacion.controller.js';
+import { HistorialCambiosModule } from '../historial-cambios/historial-cambios.module.js';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Cotizacion, Factura, Pago, Cliente, Expediente])],
+  imports: [TypeOrmModule.forFeature([Cotizacion, Factura, Pago, Cliente, Expediente]), HistorialCambiosModule],
   controllers: [CotizacionesController, FacturasController, FacturacionController],
   providers: [FacturacionService, PdfService],
   exports: [FacturacionService],

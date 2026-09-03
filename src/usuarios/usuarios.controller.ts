@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { UseGuards } from '@nestjs/common';
 import { UsuariosService } from './usuarios.service.js';
+import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { CreateUsuarioDto, ResetearPasswordDto } from './dto/create-usuario.dto.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -33,8 +34,12 @@ export class UsuariosController {
   }
 
   @Patch(':id/estado')
-  cambiarEstado(@Param('id') id: string, @Body('estado') estado: EstadoUsuario) {
-    return this.usuariosService.cambiarEstado(id, estado);
+  cambiarEstado(
+    @Param('id') id: string,
+    @Body('estado') estado: EstadoUsuario,
+    @CurrentUser('sub') usuarioId: string,
+  ) {
+    return this.usuariosService.cambiarEstado(id, estado, usuarioId);
   }
 
   /**
@@ -43,7 +48,16 @@ export class UsuariosController {
    * clase con @Roles arriba). Uso previsto: el usuario olvidó su clave.
    */
   @Post(':id/resetear-password')
-  resetearPassword(@Param('id') id: string, @Body() dto: ResetearPasswordDto) {
-    return this.usuariosService.resetearPassword(id, dto.nuevaPassword);
+  resetearPassword(
+    @Param('id') id: string,
+    @Body() dto: ResetearPasswordDto,
+    @CurrentUser('sub') usuarioId: string,
+  ) {
+    return this.usuariosService.resetearPassword(id, dto.nuevaPassword, usuarioId);
+  }
+
+  @Get(':id/historial')
+  historial(@Param('id') id: string) {
+    return this.usuariosService.historial(id);
   }
 }

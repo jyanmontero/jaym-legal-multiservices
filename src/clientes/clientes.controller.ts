@@ -48,7 +48,16 @@ export class ClientesController {
   }
 
   @Patch(':id')
-  actualizar(@Param('id') id: string, @Body() dto: UpdateClienteDto) {
-    return this.clientesService.actualizar(id, dto);
+  actualizar(
+    @Param('id') id: string,
+    @Body() dto: UpdateClienteDto,
+    @CurrentUser('sub') usuarioId: string,
+  ) {
+    return this.clientesService.actualizar(id, dto, usuarioId);
+  }
+
+  @Get(':id/historial')
+  historial(@Param('id') id: string) {
+    return this.clientesService.historial(id);
   }
 }

@@ -116,13 +116,18 @@ export class ExpedientesService {
   }
 
   async listar(
-    filtros: { estado?: string; materia?: string; clienteId?: string } = {},
+    filtros: { estado?: string; materia?: string; clienteId?: string; q?: string } = {},
     usuarioActual?: UsuarioActual,
   ) {
     const qb = this.expedienteRepo.createQueryBuilder('e');
     if (filtros.estado) qb.andWhere('e.estado = :estado', { estado: filtros.estado });
     if (filtros.materia) qb.andWhere('e.materia = :materia', { materia: filtros.materia });
     if (filtros.clienteId) qb.andWhere('e.clienteId = :clienteId', { clienteId: filtros.clienteId });
+    if (filtros.q) {
+      qb.andWhere('(e.codigo ILIKE :q OR e.contraparte ILIKE :q OR e.tribunalInstitucion ILIKE :q)', {
+        q: `%${filtros.q}%`,
+      });
+    }
     // Sin visibilidad total: solo expedientes propios o todavía sin asignar
     // (sección "que cada abogado vea solo lo suyo").
     if (usuarioActual && !ROLES_CON_VISIBILIDAD_TOTAL_EXPEDIENTES.includes(usuarioActual.rol)) {

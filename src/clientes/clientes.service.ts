@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { Cliente } from './cliente.entity.js';
 import { CreateClienteDto, UpdateClienteDto } from './dto/create-cliente.dto.js';
 import { EstadoCliente, TipoCliente } from '../common/enums/index.js';
+import { HistorialCambiosService } from '../historial-cambios/historial-cambios.service.js';
 
 export interface PosibleDuplicado {
   campo: 'cedula' | 'pasaporte' | 'rnc' | 'correo';
@@ -19,6 +20,7 @@ export class ClientesService {
   constructor(
     @InjectRepository(Cliente)
     private readonly clienteRepo: Repository<Cliente>,
+    private readonly historialCambiosService: HistorialCambiosService,
   ) {}
 
   /**
@@ -128,8 +130,9 @@ export class ClientesService {
     return cliente;
   }
 
-  async actualizar(id: string, dto: UpdateClienteDto): Promise<Cliente> {
+  async actualizar(id: string, dto: UpdateClienteDto, usuarioId?: string): Promise<Cliente> {
     const cliente = await this.obtenerPorId(id);
+    const snapshotAnterior = { ...cliente };
 
     // Misma protección contra duplicados que en la creación, pero excluyendo
     // el propio registro que se está editando.
@@ -148,6 +151,23 @@ export class ClientesService {
     }
 
     this.clienteRepo.merge(cliente, dto);
-    return this.clienteRepo.save(cliente);
+    const guardado = await this.clienteRepo.save(cliente);
+
+    if (usuarioId) {
+      await this.historialCambiosService.registrarCambio({
+        entidadTipo: 'cliente',
+        entidadId: id,
+        snapshotAnterior,
+        snapshotNuevo: { ...guardado },
+        usuarioId,
+      });
+    }
+
+    return guardado;
+  }
+
+  async historial(id: string) {
+    await this.obtenerPorId(id); // 404 si no existe
+    return this.historialCambiosService.listarPorEntidad('cliente', id);
   }
 }
