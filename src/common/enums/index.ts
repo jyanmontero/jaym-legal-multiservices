@@ -143,6 +143,16 @@ export enum EstadoCalidadDocumento {
 // Roles internos que, por defecto, siempre pueden ver/descargar documentos
 // marcados como confidenciales, sin necesidad de un permiso explícito en
 // documento_permisos. El resto de los roles necesita un permiso explícito.
+// Roles con visibilidad total de expedientes (ven los de todos los
+// abogados). El resto de roles con acceso al módulo (abogado asociado,
+// asistente/paralegal) solo ve los expedientes donde es el responsable
+// asignado, más los que todavía no tienen responsable asignado -- para que
+// un caso sin asignar no desaparezca de la vista de nadie.
+export const ROLES_CON_VISIBILIDAD_TOTAL_EXPEDIENTES = [
+  RolUsuario.SUPERADMINISTRADOR,
+  RolUsuario.ABOGADO_ADMINISTRADOR,
+];
+
 export const ROLES_CON_ACCESO_CONFIDENCIAL_POR_DEFECTO = [
   RolUsuario.SUPERADMINISTRADOR,
   RolUsuario.ABOGADO_ADMINISTRADOR,

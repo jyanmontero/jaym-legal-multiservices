@@ -3,7 +3,12 @@ import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Expediente } from './expediente.entity.js';
 import { CreateExpedienteDto, UpdateExpedienteDto } from './dto/expediente.dto.js';
-import { PREFIJO_MATERIA, EstadoExpediente } from '../common/enums/index.js';
+import {
+  PREFIJO_MATERIA,
+  EstadoExpediente,
+  RolUsuario,
+  ROLES_CON_VISIBILIDAD_TOTAL_EXPEDIENTES,
+} from '../common/enums/index.js';
 import { HistorialService } from '../historial/historial.service.js';
 import { ExpedienteRequisitosService } from '../requisitos/expediente-requisitos.service.js';
 import { Cotizacion } from '../facturacion/cotizacion.entity.js';
@@ -13,6 +18,13 @@ import { Alerta } from '../alertas/alerta.entity.js';
 import { ExpedienteRequisito } from '../requisitos/expediente-requisito.entity.js';
 import { AgendaEvento } from '../agenda/agenda-evento.entity.js';
 import { HistorialExpediente } from '../historial/historial-expediente.entity.js';
+
+// Datos mínimos del usuario autenticado que necesita el control de
+// visibilidad por responsable -- ver ROLES_CON_VISIBILIDAD_TOTAL_EXPEDIENTES.
+export interface UsuarioActual {
+  id: string;
+  rol: RolUsuario;
+}
 
 @Injectable()
 export class ExpedientesService {
@@ -55,6 +67,10 @@ export class ExpedientesService {
     const expediente = this.expedienteRepo.create({
       ...dto,
       codigo,
+      // Si no se indica un abogado responsable explícito, el expediente
+      // queda asignado a quien lo crea -- así no desaparece de su propia
+      // vista en cuanto se activa el filtro por responsable (ver listar()).
+      abogadoResponsableId: dto.abogadoResponsableId ?? usuarioId,
       fechaApertura: new Date().toISOString().slice(0, 10),
       etiquetas: dto.etiquetas ?? [],
     });
@@ -78,17 +94,42 @@ export class ExpedientesService {
     return guardado;
   }
 
-  async obtenerPorId(id: string): Promise<Expediente> {
+  /**
+   * Un usuario sin visibilidad total (ver ROLES_CON_VISIBILIDAD_TOTAL_EXPEDIENTES)
+   * solo puede ver un expediente si es su responsable asignado, o si el
+   * expediente todavía no tiene responsable. Mismo criterio en listar() y
+   * en actualizar() -- centralizado aquí para no repetir la regla.
+   */
+  private verificarVisibilidad(expediente: Expediente, usuarioActual?: UsuarioActual): void {
+    if (!usuarioActual) return; // llamadas internas del sistema (sin usuario) no se restringen
+    if (ROLES_CON_VISIBILIDAD_TOTAL_EXPEDIENTES.includes(usuarioActual.rol)) return;
+    if (expediente.abogadoResponsableId && expediente.abogadoResponsableId !== usuarioActual.id) {
+      throw new ForbiddenException('Este expediente está asignado a otro abogado responsable.');
+    }
+  }
+
+  async obtenerPorId(id: string, usuarioActual?: UsuarioActual): Promise<Expediente> {
     const expediente = await this.expedienteRepo.findOne({ where: { id } });
     if (!expediente) throw new NotFoundException('Expediente no encontrado');
+    this.verificarVisibilidad(expediente, usuarioActual);
     return expediente;
   }
 
-  async listar(filtros: { estado?: string; materia?: string; clienteId?: string } = {}) {
+  async listar(
+    filtros: { estado?: string; materia?: string; clienteId?: string } = {},
+    usuarioActual?: UsuarioActual,
+  ) {
     const qb = this.expedienteRepo.createQueryBuilder('e');
     if (filtros.estado) qb.andWhere('e.estado = :estado', { estado: filtros.estado });
     if (filtros.materia) qb.andWhere('e.materia = :materia', { materia: filtros.materia });
     if (filtros.clienteId) qb.andWhere('e.clienteId = :clienteId', { clienteId: filtros.clienteId });
+    // Sin visibilidad total: solo expedientes propios o todavía sin asignar
+    // (sección "que cada abogado vea solo lo suyo").
+    if (usuarioActual && !ROLES_CON_VISIBILIDAD_TOTAL_EXPEDIENTES.includes(usuarioActual.rol)) {
+      qb.andWhere('(e.abogadoResponsableId = :miId OR e.abogadoResponsableId IS NULL)', {
+        miId: usuarioActual.id,
+      });
+    }
     return qb.orderBy('e.actualizadoEn', 'DESC').getMany();
   }
 
@@ -103,11 +144,13 @@ export class ExpedientesService {
     dto: UpdateExpedienteDto,
     usuarioId: string,
     ipDispositivo?: string,
+    usuarioActual?: UsuarioActual,
   ): Promise<Expediente & { advertenciaDeposito?: { pendientes: unknown[] } }> {
     const actualizado = await this.dataSource.transaction(async (manager) => {
       const repo = manager.getRepository(Expediente);
       const actual = await repo.findOne({ where: { id } });
       if (!actual) throw new NotFoundException('Expediente no encontrado');
+      this.verificarVisibilidad(actual, usuarioActual);
 
       const snapshotAnterior = this.toSnapshot(actual);
       const { motivo, ...cambios } = dto;

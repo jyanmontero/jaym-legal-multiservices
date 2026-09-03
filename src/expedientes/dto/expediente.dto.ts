@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString, IsUUID, IsArray, IsDateString } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsUUID, IsArray, IsDateString, ValidateIf } from 'class-validator';
 import { MateriaJuridica, EstadoExpediente, NivelPrioridad, NivelRiesgo } from '../../common/enums/index.js';
 
 export class CreateExpedienteDto {
@@ -56,9 +56,12 @@ export class UpdateExpedienteDto {
   @IsString()
   contraparte?: string;
 
+  // Acepta null explícito para desasignar (queda "sin responsable"), a
+  // diferencia de omitir el campo, que no toca el valor actual.
   @IsOptional()
+  @ValidateIf((o) => o.abogadoResponsableId !== null)
   @IsUUID()
-  abogadoResponsableId?: string;
+  abogadoResponsableId?: string | null;
 
   @IsOptional()
   @IsString()

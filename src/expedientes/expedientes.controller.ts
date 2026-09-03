@@ -15,6 +15,7 @@ import {
 import { ExpedientesService } from './expedientes.service.js';
 import { CreateExpedienteDto, UpdateExpedienteDto } from './dto/expediente.dto.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
+import type { JwtPayloadUsuario } from '../auth/decorators/current-user.decorator.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { RolUsuario } from '../common/enums/index.js';
@@ -25,16 +26,20 @@ export class ExpedientesController {
 
   @Get()
   listar(
+    @CurrentUser() usuario: JwtPayloadUsuario,
     @Query('estado') estado?: string,
     @Query('materia') materia?: string,
     @Query('clienteId') clienteId?: string,
   ) {
-    return this.expedientesService.listar({ estado, materia, clienteId });
+    return this.expedientesService.listar(
+      { estado, materia, clienteId },
+      { id: usuario.sub, rol: usuario.rol as RolUsuario },
+    );
   }
 
   @Get(':id')
-  obtener(@Param('id') id: string) {
-    return this.expedientesService.obtenerPorId(id);
+  obtener(@Param('id') id: string, @CurrentUser() usuario: JwtPayloadUsuario) {
+    return this.expedientesService.obtenerPorId(id, { id: usuario.sub, rol: usuario.rol as RolUsuario });
   }
 
   @Post()
@@ -46,10 +51,13 @@ export class ExpedientesController {
   actualizar(
     @Param('id') id: string,
     @Body() dto: UpdateExpedienteDto,
-    @CurrentUser('sub') usuarioId: string,
+    @CurrentUser() usuario: JwtPayloadUsuario,
     @Ip() ip: string,
   ) {
-    return this.expedientesService.actualizar(id, dto, usuarioId, ip);
+    return this.expedientesService.actualizar(id, dto, usuario.sub, ip, {
+      id: usuario.sub,
+      rol: usuario.rol as RolUsuario,
+    });
   }
 
   // Restringido a Superadministrador -- pensado para corregir un expediente

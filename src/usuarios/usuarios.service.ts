@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Usuario } from './usuario.entity.js';
 import { CreateUsuarioDto } from './dto/create-usuario.dto.js';
-import { EstadoUsuario } from '../common/enums/index.js';
+import { EstadoUsuario, RolUsuario } from '../common/enums/index.js';
 
 const SALT_ROUNDS = 12;
 
@@ -51,6 +51,18 @@ export class UsuariosService {
     const usuario = await this.usuarioRepo.findOne({ where: { id } });
     if (!usuario) throw new NotFoundException('Usuario no encontrado');
     return this.aPublico(usuario);
+  }
+
+  // Lista mínima (id + nombre + rol) de usuarios activos, sin correo ni
+  // estado -- pensada para poblar selectores como "Abogado responsable" en
+  // Expedientes, sin exponer la gestión completa de usuarios (ver
+  // UsuariosController: este endpoint acepta más roles que GET /usuarios).
+  async listarBasico(): Promise<{ id: string; nombreCompleto: string; rol: RolUsuario }[]> {
+    const usuarios = await this.usuarioRepo.find({
+      where: { estado: EstadoUsuario.ACTIVO },
+      order: { nombreCompleto: 'ASC' },
+    });
+    return usuarios.map((u) => ({ id: u.id, nombreCompleto: u.nombreCompleto, rol: u.rol }));
   }
 
   async listar(): Promise<UsuarioPublico[]> {

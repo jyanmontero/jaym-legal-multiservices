@@ -37,7 +37,7 @@ export class Expediente {
   contraparte?: string;
 
   @Column({ nullable: true })
-  abogadoResponsableId?: string;
+  abogadoResponsableId?: string | null;
 
   @Column({ type: 'enum', enum: MateriaJuridica })
   materia: MateriaJuridica;

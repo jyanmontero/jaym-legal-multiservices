@@ -17,6 +17,16 @@ export class UsuariosController {
     return this.usuariosService.listar();
   }
 
+  // Lista básica para selectores (ej. "Abogado responsable" en
+  // Expedientes) -- abierta también a Abogado Administrador, no solo al
+  // Superadministrador como el resto de este controlador.
+  @Get('basico')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.SUPERADMINISTRADOR, RolUsuario.ABOGADO_ADMINISTRADOR)
+  listarBasico() {
+    return this.usuariosService.listarBasico();
+  }
+
   @Post()
   crear(@Body() dto: CreateUsuarioDto) {
     return this.usuariosService.crear(dto);
