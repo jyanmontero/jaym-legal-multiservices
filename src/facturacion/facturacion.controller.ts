@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Delete,
   Body,
   Param,
@@ -20,12 +21,12 @@ import { PdfService } from './pdf/pdf.service.js';
 import { Cliente } from '../clientes/cliente.entity.js';
 import { Expediente } from '../expedientes/expediente.entity.js';
 import { CreateCotizacionDto, CambiarEstadoCotizacionDto } from './dto/cotizacion.dto.js';
-import { CreateFacturaDto } from './dto/factura.dto.js';
+import { CreateFacturaDto, UpdateFacturaDto } from './dto/factura.dto.js';
 import { CreatePagoDto } from './dto/pago.dto.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
-import { EstadoCotizacion, EstadoFactura, ROLES_CON_ACCESO_FACTURACION } from '../common/enums/index.js';
+import { EstadoCotizacion, EstadoFactura, ROLES_CON_ACCESO_FACTURACION, RolUsuario } from '../common/enums/index.js';
 
 @Controller('cotizaciones')
 @UseGuards(RolesGuard)
@@ -118,6 +119,18 @@ export class FacturasController {
   @Post()
   crear(@Body() dto: CreateFacturaDto, @CurrentUser('sub') usuarioId: string) {
     return this.facturacionService.crearFactura(dto, usuarioId);
+  }
+
+  // Edita los campos de una factura ya guardada (concepto, items, fechas,
+  // NCF, notas, direcciones...). Reservado al superadministrador -- el
+  // resto de roles con acceso a facturación solo puede consultar, registrar
+  // pagos o anular. El monto pagado sigue siendo derivado de los pagos
+  // registrados, no se edita aquí (ver FacturacionService.registrarPago).
+  @Patch(':id')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.SUPERADMINISTRADOR)
+  editar(@Param('id') id: string, @Body() dto: UpdateFacturaDto) {
+    return this.facturacionService.actualizarFactura(id, dto);
   }
 
   @Post(':id/anular')

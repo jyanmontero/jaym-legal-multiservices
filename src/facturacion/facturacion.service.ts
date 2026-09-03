@@ -11,7 +11,7 @@ import { Pago } from './pago.entity.js';
 import { Cliente } from '../clientes/cliente.entity.js';
 import { Expediente } from '../expedientes/expediente.entity.js';
 import { CreateCotizacionDto } from './dto/cotizacion.dto.js';
-import { CreateFacturaDto } from './dto/factura.dto.js';
+import { CreateFacturaDto, UpdateFacturaDto } from './dto/factura.dto.js';
 import { CreatePagoDto } from './dto/pago.dto.js';
 import { calcularTotales } from './item-facturable.js';
 import { EstadoCotizacion, EstadoFactura, TipoCliente } from '../common/enums/index.js';
@@ -264,6 +264,71 @@ export class FacturacionService {
     const factura = await this.facturaRepo.findOne({ where: { id } });
     if (!factura) throw new NotFoundException('Factura no encontrada');
     return factura;
+  }
+
+  /**
+   * Edita los campos de una factura ya guardada (concepto, items, fechas,
+   * NCF, notas, direcciones, etc). Reservado a SUPERADMINISTRADOR -- ver
+   * el guard en FacturasController. No permite editar montoPagado/estado
+   * directamente: esos siguen siendo derivados de los pagos registrados
+   * (registrarPago/eliminarPago), para no perder la trazabilidad de quién
+   * pagó qué y cuándo. Si cambian items/descuento/ITBIS/envío se
+   * recalculan subtotal/itbis/total, y el estado se vuelve a derivar
+   * comparando el nuevo total contra el monto ya pagado.
+   */
+  async actualizarFactura(id: string, dto: UpdateFacturaDto): Promise<Factura> {
+    return this.dataSource.transaction(async (manager) => {
+      const facturaRepo = manager.getRepository(Factura);
+      const factura = await facturaRepo.findOne({ where: { id } });
+      if (!factura) throw new NotFoundException('Factura no encontrada');
+      if (factura.estado === EstadoFactura.ANULADA) {
+        throw new BadRequestException('No se puede editar una factura anulada.');
+      }
+
+      const items = dto.items ?? factura.items;
+      const aplicaItbisGeneral = dto.aplicaItbis ?? factura.aplicaItbis;
+      const descuento = dto.descuento ?? Number(factura.descuento);
+      const costoEnvio = dto.costoEnvio ?? Number(factura.costoEnvio);
+      const totales = calcularTotales(items, aplicaItbisGeneral, descuento);
+      const nuevoTotal = Number(totales.total) + costoEnvio;
+
+      const montoPagado = Number(factura.montoPagado);
+      if (nuevoTotal < montoPagado) {
+        throw new BadRequestException(
+          `El nuevo total (RD$ ${nuevoTotal.toFixed(2)}) no puede quedar por debajo del monto ya pagado (RD$ ${montoPagado.toFixed(2)}). Ajusta primero los pagos registrados.`,
+        );
+      }
+
+      let nuevoEstado = EstadoFactura.PENDIENTE;
+      if (montoPagado >= nuevoTotal && montoPagado > 0) nuevoEstado = EstadoFactura.PAGADA;
+      else if (montoPagado > 0) nuevoEstado = EstadoFactura.PAGADA_PARCIAL;
+
+      await facturaRepo.update(id, {
+        concepto: dto.concepto ?? factura.concepto,
+        items,
+        aplicaItbis: aplicaItbisGeneral,
+        subtotal: totales.subtotal,
+        descuento: totales.descuento,
+        itbis: totales.itbis,
+        costoEnvio: costoEnvio.toFixed(2),
+        total: nuevoTotal.toFixed(2),
+        estado: nuevoEstado,
+        fechaEmision: dto.fechaEmision ?? factura.fechaEmision,
+        fechaVencimiento: dto.fechaVencimiento ?? factura.fechaVencimiento,
+        ncf: dto.ncf ?? factura.ncf,
+        notas: dto.notas ?? factura.notas,
+        condicionesPago: dto.condicionesPago ?? factura.condicionesPago,
+        numeroOrdenCompra: dto.numeroOrdenCompra ?? factura.numeroOrdenCompra,
+        vendedor: dto.vendedor ?? factura.vendedor,
+        direccionFacturacion: dto.direccionFacturacion ?? factura.direccionFacturacion,
+        direccionEnvio: dto.direccionEnvio ?? factura.direccionEnvio,
+      });
+
+      if (factura.expedienteId) {
+        await this.recalcularBalanceExpediente(factura.expedienteId, manager);
+      }
+      return facturaRepo.findOne({ where: { id } }) as Promise<Factura>;
+    });
   }
 
   async anularFactura(id: string): Promise<Factura> {
