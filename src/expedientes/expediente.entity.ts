@@ -36,7 +36,7 @@ export class Expediente {
   @Column({ nullable: true })
   contraparte?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   abogadoResponsableId?: string | null;
 
   @Column({ type: 'enum', enum: MateriaJuridica })
