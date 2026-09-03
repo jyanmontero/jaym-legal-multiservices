@@ -3,10 +3,13 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
   Ip,
+  HttpCode,
+  HttpStatus,
   UseGuards,
 } from '@nestjs/common';
 import { ExpedientesService } from './expedientes.service.js';
@@ -47,6 +50,16 @@ export class ExpedientesController {
     @Ip() ip: string,
   ) {
     return this.expedientesService.actualizar(id, dto, usuarioId, ip);
+  }
+
+  // Restringido a Superadministrador -- pensado para corregir un expediente
+  // mal instrumentado (duplicado, creado por error), no como flujo normal.
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.SUPERADMINISTRADOR)
+  eliminar(@Param('id') id: string) {
+    return this.expedientesService.eliminar(id);
   }
 
   // Restringido a Superadministrador — sección 7 del requerimiento: solo

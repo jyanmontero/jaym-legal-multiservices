@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Expediente } from './expediente.entity.js';
@@ -6,6 +6,13 @@ import { CreateExpedienteDto, UpdateExpedienteDto } from './dto/expediente.dto.j
 import { PREFIJO_MATERIA, EstadoExpediente } from '../common/enums/index.js';
 import { HistorialService } from '../historial/historial.service.js';
 import { ExpedienteRequisitosService } from '../requisitos/expediente-requisitos.service.js';
+import { Cotizacion } from '../facturacion/cotizacion.entity.js';
+import { Factura } from '../facturacion/factura.entity.js';
+import { Documento } from '../documentos/documento.entity.js';
+import { Alerta } from '../alertas/alerta.entity.js';
+import { ExpedienteRequisito } from '../requisitos/expediente-requisito.entity.js';
+import { AgendaEvento } from '../agenda/agenda-evento.entity.js';
+import { HistorialExpediente } from '../historial/historial-expediente.entity.js';
 
 @Injectable()
 export class ExpedientesService {
@@ -184,6 +191,55 @@ export class ExpedientesService {
       );
 
       return restaurado;
+    });
+  }
+
+  /**
+   * Elimina un expediente por completo -- pensado para corregir expedientes
+   * mal instrumentados (duplicados, creados por error), no como flujo normal
+   * de trabajo (el historial normal es append-only a proposito). Restringido
+   * a Superadministrador desde el controlador.
+   *
+   * Las cotizaciones/facturas ya generadas NO se borran (son el registro
+   * financiero real) -- se desvinculan del expediente (expedienteId a null)
+   * para conservarlas. Si alguna factura vinculada ya tiene pagos
+   * registrados, se bloquea la eliminacion por completo: hay que resolver
+   * esos pagos primero (ver FacturacionService.eliminarFactura /
+   * eliminarPago).
+   */
+  async eliminar(id: string): Promise<void> {
+    await this.obtenerPorId(id); // 404 si no existe
+
+    await this.dataSource.transaction(async (manager) => {
+      const facturaRepo = manager.getRepository(Factura);
+      const cotizacionRepo = manager.getRepository(Cotizacion);
+
+      const facturasVinculadas = await facturaRepo.find({ where: { expedienteId: id } });
+      const tienePagos = facturasVinculadas.some((f) => Number(f.montoPagado) > 0);
+      if (tienePagos) {
+        throw new BadRequestException(
+          'Este expediente tiene una o mas facturas con pagos registrados -- no se puede eliminar. Resuelve o elimina esos pagos primero.',
+        );
+      }
+
+      // Nota: TypeORM ignora las propiedades "undefined" en update() (las
+      // trata como "no tocar este campo", no como "poner NULL") -- hay que
+      // pasar null explicitamente para desvincular de verdad.
+      if (facturasVinculadas.length > 0) {
+        await facturaRepo.update({ expedienteId: id }, { expedienteId: null as unknown as undefined });
+      }
+      const cotizacionesVinculadas = await cotizacionRepo.find({ where: { expedienteId: id } });
+      if (cotizacionesVinculadas.length > 0) {
+        await cotizacionRepo.update({ expedienteId: id }, { expedienteId: null as unknown as undefined });
+      }
+
+      await manager.getRepository(Documento).delete({ expedienteId: id });
+      await manager.getRepository(Alerta).delete({ expedienteId: id });
+      await manager.getRepository(ExpedienteRequisito).delete({ expedienteId: id });
+      await manager.getRepository(AgendaEvento).delete({ expedienteId: id });
+      await manager.getRepository(HistorialExpediente).delete({ expedienteId: id });
+
+      await manager.getRepository(Expediente).delete({ id });
     });
   }
 

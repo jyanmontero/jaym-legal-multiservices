@@ -161,6 +161,17 @@ export class FacturacionService {
     });
   }
 
+  /**
+   * Elimina una cotizacion por completo -- no lleva peso fiscal (no es un
+   * comprobante), asi que se puede borrar sin dejar rastro. Si ya fue
+   * convertida en factura, la factura generada NO se toca -- solo se pierde
+   * el registro de la cotizacion que la origino.
+   */
+  async eliminarCotizacion(id: string): Promise<void> {
+    await this.obtenerCotizacion(id); // 404 si no existe
+    await this.cotizacionRepo.delete(id);
+  }
+
   // --- Facturas --------------------------------------------------------
 
   private async crearFacturaInterna(
@@ -317,6 +328,64 @@ export class FacturacionService {
         await this.recalcularBalanceExpediente(factura.expedienteId, manager);
       }
       return guardado;
+    });
+  }
+
+  /**
+   * Elimina una factura por completo -- pensado para corregir una factura
+   * mal cargada (duplicada, creada por error), no como flujo normal (para
+   * anular una factura valida ya emitida, usa anularFactura en vez de
+   * esto). Bloqueado si ya tiene pagos registrados -- hay que eliminar esos
+   * pagos primero con eliminarPago.
+   */
+  async eliminarFactura(id: string): Promise<void> {
+    return this.dataSource.transaction(async (manager) => {
+      const facturaRepo = manager.getRepository(Factura);
+      const factura = await facturaRepo.findOne({ where: { id } });
+      if (!factura) throw new NotFoundException('Factura no encontrada');
+      if (Number(factura.montoPagado) > 0) {
+        throw new BadRequestException(
+          'No se puede eliminar una factura con pagos registrados. Elimina primero sus pagos (o anúlala si prefieres conservar el registro).',
+        );
+      }
+      await facturaRepo.delete(id);
+      if (factura.expedienteId) {
+        await this.recalcularBalanceExpediente(factura.expedienteId, manager);
+      }
+    });
+  }
+
+  /**
+   * Elimina un pago registrado por error y recalcula el saldo/estado de su
+   * factura, tal como lo hace registrarPago pero a la inversa.
+   */
+  async eliminarPago(facturaId: string, pagoId: string): Promise<void> {
+    return this.dataSource.transaction(async (manager) => {
+      const facturaRepo = manager.getRepository(Factura);
+      const pagoRepo = manager.getRepository(Pago);
+
+      const factura = await facturaRepo.findOne({ where: { id: facturaId } });
+      if (!factura) throw new NotFoundException('Factura no encontrada');
+      const pago = await pagoRepo.findOne({ where: { id: pagoId, facturaId } });
+      if (!pago) throw new NotFoundException('Pago no encontrado');
+
+      await pagoRepo.delete(pagoId);
+
+      const pagosRestantes = await pagoRepo.find({ where: { facturaId } });
+      const totalPagado = pagosRestantes.reduce((acc, p) => acc + Number(p.monto), 0);
+
+      let nuevoEstado = EstadoFactura.PENDIENTE;
+      if (totalPagado >= Number(factura.total)) nuevoEstado = EstadoFactura.PAGADA;
+      else if (totalPagado > 0) nuevoEstado = EstadoFactura.PAGADA_PARCIAL;
+
+      await facturaRepo.update(facturaId, {
+        montoPagado: totalPagado.toFixed(2),
+        estado: nuevoEstado,
+      });
+
+      if (factura.expedienteId) {
+        await this.recalcularBalanceExpediente(factura.expedienteId, manager);
+      }
     });
   }
 

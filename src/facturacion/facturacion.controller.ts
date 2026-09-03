@@ -2,12 +2,15 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Body,
   Param,
   Query,
   Res,
   UseGuards,
   NotFoundException,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -64,6 +67,14 @@ export class CotizacionesController {
     return this.facturacionService.convertirCotizacionAFactura(id, usuarioId);
   }
 
+  // Elimina la cotizacion por completo -- pensada para corregir una que
+  // quedó mal cargada, no como flujo normal de trabajo.
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  eliminar(@Param('id') id: string) {
+    return this.facturacionService.eliminarCotizacion(id);
+  }
+
   @Get(':id/pdf')
   async pdf(@Param('id') id: string, @Res() res: Response) {
     const cotizacion = await this.facturacionService.obtenerCotizacion(id);
@@ -114,9 +125,24 @@ export class FacturasController {
     return this.facturacionService.anularFactura(id);
   }
 
+  // Elimina la factura por completo -- pensada para corregir una que quedó
+  // mal cargada (duplicada, creada por error). Para anular una factura
+  // válida ya emitida, usa /facturas/:id/anular en vez de esto.
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  eliminar(@Param('id') id: string) {
+    return this.facturacionService.eliminarFactura(id);
+  }
+
   @Get(':id/pagos')
   listarPagos(@Param('id') id: string) {
     return this.facturacionService.listarPagos(id);
+  }
+
+  @Delete(':id/pagos/:pagoId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  eliminarPago(@Param('id') id: string, @Param('pagoId') pagoId: string) {
+    return this.facturacionService.eliminarPago(id, pagoId);
   }
 
   @Post(':id/pagos')
