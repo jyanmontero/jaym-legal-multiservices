@@ -53,6 +53,12 @@ export class AgendaEvento {
   @Column('int', { nullable: true })
   recordatorioMinutosAntes?: number;
 
+  // Evita reenviar el mismo recordatorio en cada corrida del cron (ver
+  // AgendaScheduler). Se resetea a false cuando se reprograma la fecha o
+  // se cambia recordatorioMinutosAntes -- ver AgendaService.actualizar().
+  @Column({ default: false })
+  recordatorioEnviado: boolean;
+
   @Column('text', { nullable: true })
   observaciones?: string;
 

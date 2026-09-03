@@ -6,6 +6,7 @@ import { Usuario } from './usuario.entity.js';
 import { CreateUsuarioDto } from './dto/create-usuario.dto.js';
 import { EstadoUsuario, RolUsuario } from '../common/enums/index.js';
 import { HistorialCambiosService } from '../historial-cambios/historial-cambios.service.js';
+import { CifradoService } from '../common/cifrado/cifrado.service.js';
 
 const SALT_ROUNDS = 12;
 
@@ -17,6 +18,7 @@ export class UsuariosService {
     @InjectRepository(Usuario)
     private readonly usuarioRepo: Repository<Usuario>,
     private readonly historialCambiosService: HistorialCambiosService,
+    private readonly cifradoService: CifradoService,
   ) {}
 
   private aPublico(usuario: Usuario): UsuarioPublico {
@@ -45,8 +47,15 @@ export class UsuariosService {
   }
 
   // Usado únicamente por AuthService para validar login — sí incluye el hash.
+  // El secreto de 2FA se descifra aquí mismo (ver CifradoService) para que
+  // AuthService siga trabajando con el valor real sin saber que está
+  // cifrado en la base de datos.
   async buscarPorCorreoConHash(correo: string): Promise<Usuario | null> {
-    return this.usuarioRepo.findOne({ where: { correo } });
+    const usuario = await this.usuarioRepo.findOne({ where: { correo } });
+    if (usuario?.dosFactorSecreto) {
+      usuario.dosFactorSecreto = this.cifradoService.descifrar(usuario.dosFactorSecreto);
+    }
+    return usuario;
   }
 
   async buscarPorId(id: string): Promise<UsuarioPublico> {
@@ -78,7 +87,7 @@ export class UsuariosService {
 
   async activarDosFactor(id: string, secreto: string): Promise<void> {
     await this.usuarioRepo.update(id, {
-      dosFactorSecreto: secreto,
+      dosFactorSecreto: this.cifradoService.cifrar(secreto),
       dosFactorActivo: true,
     });
   }
@@ -86,12 +95,17 @@ export class UsuariosService {
   async guardarSecretoTemporal(id: string, secreto: string): Promise<void> {
     // Se guarda antes de confirmar el primer código — dosFactorActivo
     // permanece en false hasta que el usuario verifique con éxito.
-    await this.usuarioRepo.update(id, { dosFactorSecreto: secreto });
+    await this.usuarioRepo.update(id, { dosFactorSecreto: this.cifradoService.cifrar(secreto) });
   }
 
+  // El secreto se descifra antes de devolverlo -- ver nota en
+  // buscarPorCorreoConHash().
   async obtenerConSecreto(id: string): Promise<Usuario> {
     const usuario = await this.usuarioRepo.findOne({ where: { id } });
     if (!usuario) throw new NotFoundException('Usuario no encontrado');
+    if (usuario.dosFactorSecreto) {
+      usuario.dosFactorSecreto = this.cifradoService.descifrar(usuario.dosFactorSecreto);
+    }
     return usuario;
   }
 

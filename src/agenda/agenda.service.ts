@@ -76,6 +76,12 @@ export class AgendaService {
     Object.assign(evento, resto);
     if (fechaHoraInicio) evento.fechaHoraInicio = new Date(fechaHoraInicio);
     if (fechaHoraFin) evento.fechaHoraFin = new Date(fechaHoraFin);
+    // Si se reprograma la fecha o se cambia el aviso, el recordatorio debe
+    // recalcularse -- si ya se había enviado para la fecha vieja, no debe
+    // quedar marcado como enviado para la nueva.
+    if (fechaHoraInicio || dto.recordatorioMinutosAntes !== undefined) {
+      evento.recordatorioEnviado = false;
+    }
 
     const guardado = await this.eventoRepo.save(evento);
 

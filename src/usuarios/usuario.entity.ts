@@ -40,8 +40,9 @@ export class Usuario {
   @Column({ default: false })
   dosFactorActivo: boolean;
 
-  // Secreto TOTP, cifrado a nivel de aplicación en una versión posterior;
-  // en el MVP se guarda tal cual, protegido solo por el acceso a la BD.
+  // Secreto TOTP -- cifrado a nivel de aplicación antes de guardarse (ver
+  // common/cifrado/cifrado.service.ts y usuarios.service.ts). El campo
+  // sigue siendo texto libre porque el valor cifrado también es texto.
   @Column({ nullable: true })
   dosFactorSecreto?: string;
 
