@@ -5,6 +5,7 @@ import { DocumentosService } from '../documentos/documentos.service.js';
 import { CrearSolicitudDocumentoDto } from './dto/crear-solicitud.dto.js';
 import { CompletarSolicitudDto } from './dto/completar-solicitud.dto.js';
 import { RevisarSolicitudDocumentoDto } from './dto/revisar-solicitud.dto.js';
+import { IniciarSolicitudPublicaDto } from './dto/iniciar-solicitud-publica.dto.js';
 import { ConfirmarPagoDto } from './dto/confirmar-pago.dto.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -32,6 +33,28 @@ export class PlantillasCatalogoController {
 @Controller('solicitudes-documento')
 export class SolicitudesDocumentoPublicoController {
   constructor(private readonly plantillasService: PlantillasService) {}
+
+  // IMPORTANTE: estas dos rutas literales ('catalogo', 'iniciar') deben ir
+  // declaradas ANTES que 'publico/:token' en este mismo controller -- Nest
+  // registra las rutas de un controller en orden de declaración, y si
+  // 'publico/:token' fuera primero, capturaría también '/publico/catalogo'
+  // y '/publico/iniciar' como si 'catalogo'/'iniciar' fueran el token.
+
+  // Catálogo público -- para que la web/landing muestre las plantillas
+  // disponibles con su precio, sin necesidad de sesión.
+  @Public()
+  @Get('publico/catalogo')
+  catalogoPublico() {
+    return this.plantillasService.listarCatalogo();
+  }
+
+  // Autoservicio: cualquiera elige una plantilla y arranca su propia
+  // solicitud, sin que el despacho la cree primero.
+  @Public()
+  @Post('publico/iniciar')
+  iniciarPublico(@Body() dto: IniciarSolicitudPublicaDto) {
+    return this.plantillasService.iniciarPublico(dto);
+  }
 
   @Public()
   @Get('publico/:token')

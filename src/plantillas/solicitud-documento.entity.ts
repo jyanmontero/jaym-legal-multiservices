@@ -58,8 +58,11 @@ export class SolicitudDocumento {
   @Column()
   tokenAcceso: string;
 
-  @Column()
-  creadoPorId: string;
+  // Nullable: una solicitud puede originarse en el catálogo público de
+  // autoservicio (nadie del despacho la creó), no solo desde la pantalla
+  // interna.
+  @Column({ nullable: true })
+  creadoPorId?: string;
 
   // Precio copiado del catálogo al momento de crear la solicitud (ver nota
   // en plantillas-catalogo.ts). RD$.

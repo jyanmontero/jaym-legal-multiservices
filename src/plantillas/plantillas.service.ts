@@ -11,6 +11,7 @@ import { CrearSolicitudDocumentoDto } from './dto/crear-solicitud.dto.js';
 import { CompletarSolicitudDto } from './dto/completar-solicitud.dto.js';
 import { RevisarSolicitudDocumentoDto } from './dto/revisar-solicitud.dto.js';
 import { ConfirmarPagoDto } from './dto/confirmar-pago.dto.js';
+import { IniciarSolicitudPublicaDto } from './dto/iniciar-solicitud-publica.dto.js';
 import {
   CATALOGO_PLANTILLAS,
   obtenerPlantilla,
@@ -78,6 +79,26 @@ export class PlantillasService {
     });
     const guardada = await this.solicitudRepo.save(solicitud);
     return { solicitud: guardada, enlacePublico: this.construirEnlacePublico(guardada.tokenAcceso) };
+  }
+
+  /**
+   * Autoservicio público: cualquiera puede iniciar una solicitud desde el
+   * catálogo público (sin que el despacho la cree primero), eligiendo solo
+   * la plantilla. Sin cliente/expediente vinculado ni notas -- eso se puede
+   * completar después desde la pantalla interna si hace falta.
+   */
+  async iniciarPublico(dto: IniciarSolicitudPublicaDto): Promise<{ tokenAcceso: string }> {
+    const plantilla = obtenerPlantilla(dto.plantillaClave);
+    if (!plantilla) throw new BadRequestException('Plantilla no encontrada');
+
+    const solicitud = this.solicitudRepo.create({
+      plantillaClave: dto.plantillaClave,
+      datos: {},
+      tokenAcceso: this.generarToken(),
+      precio: plantilla.precio.toFixed(2),
+    });
+    const guardada = await this.solicitudRepo.save(solicitud);
+    return { tokenAcceso: guardada.tokenAcceso };
   }
 
   async listar(filtros: { estado?: string; expedienteId?: string; clienteId?: string }) {
