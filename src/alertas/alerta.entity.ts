@@ -36,6 +36,9 @@ export class Alerta {
   @Column({ nullable: true })
   agendaEventoId?: string;
 
+  @Column({ nullable: true })
+  facturaId?: string;
+
   @Column('text')
   mensaje: string;
 

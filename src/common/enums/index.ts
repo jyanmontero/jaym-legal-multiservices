@@ -196,6 +196,7 @@ export enum TipoReglaAlerta {
   REQUISITO_PENDIENTE_VENCIDO = 'requisito_pendiente_vencido',
   EVENTO_PROXIMO = 'evento_proximo',
   EVENTO_VENCIDO = 'evento_vencido',
+  FACTURA_VENCIDA = 'factura_vencida',
 }
 
 export enum SeveridadAlerta {

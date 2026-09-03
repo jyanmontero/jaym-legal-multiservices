@@ -9,6 +9,8 @@ import { Expediente } from '../expedientes/expediente.entity.js';
 import { Documento } from '../documentos/documento.entity.js';
 import { ExpedienteRequisito } from '../requisitos/expediente-requisito.entity.js';
 import { AgendaEvento } from '../agenda/agenda-evento.entity.js';
+import { Factura } from '../facturacion/factura.entity.js';
+import { NotificacionesModule } from '../notificaciones/notificaciones.module.js';
 
 @Module({
   imports: [
@@ -22,7 +24,10 @@ import { AgendaEvento } from '../agenda/agenda-evento.entity.js';
       Documento,
       ExpedienteRequisito,
       AgendaEvento,
+      Factura,
     ]),
+    // Para que AlertasScheduler pueda inyectar CorreoService y enviar avisos.
+    NotificacionesModule,
   ],
   controllers: [AlertasController],
   providers: [AlertasService, AlertasScheduler],

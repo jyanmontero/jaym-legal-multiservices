@@ -7,15 +7,17 @@ import { Expediente } from '../expedientes/expediente.entity.js';
 import { Documento } from '../documentos/documento.entity.js';
 import { ExpedienteRequisito } from '../requisitos/expediente-requisito.entity.js';
 import { AgendaEvento } from '../agenda/agenda-evento.entity.js';
+import { Factura } from '../facturacion/factura.entity.js';
 import {
   TipoReglaAlerta,
   SeveridadAlerta,
   EstadoExpediente,
   EstadoRequisito,
   EstadoEventoAgenda,
+  EstadoFactura,
 } from '../common/enums/index.js';
 
-type CampoEntidad = 'expedienteId' | 'documentoId' | 'agendaEventoId';
+type CampoEntidad = 'expedienteId' | 'documentoId' | 'agendaEventoId' | 'facturaId';
 
 interface CandidatoAlerta {
   entidadId: string; // valor que va en el campo FK (expedienteId, documentoId, etc.)
@@ -41,6 +43,7 @@ const CONFIG_POR_DEFECTO: Array<{
   { tipoRegla: TipoReglaAlerta.REQUISITO_PENDIENTE_VENCIDO, umbralDias: 0, severidadDefault: SeveridadAlerta.ATENCION },
   { tipoRegla: TipoReglaAlerta.EVENTO_PROXIMO, umbralDias: 1, severidadDefault: SeveridadAlerta.INFORMATIVA },
   { tipoRegla: TipoReglaAlerta.EVENTO_VENCIDO, umbralDias: 0, severidadDefault: SeveridadAlerta.URGENTE },
+  { tipoRegla: TipoReglaAlerta.FACTURA_VENCIDA, umbralDias: 0, severidadDefault: SeveridadAlerta.URGENTE },
 ];
 
 @Injectable()
@@ -56,6 +59,7 @@ export class AlertasService implements OnModuleInit {
     @InjectRepository(ExpedienteRequisito)
     private readonly requisitoRepo: Repository<ExpedienteRequisito>,
     @InjectRepository(AgendaEvento) private readonly eventoRepo: Repository<AgendaEvento>,
+    @InjectRepository(Factura) private readonly facturaRepo: Repository<Factura>,
   ) {}
 
   /** Siembra la configuración por defecto la primera vez que arranca el sistema. */
@@ -101,9 +105,10 @@ export class AlertasService implements OnModuleInit {
    * AlertasScheduler) y también puede dispararse manualmente vía
    * POST /alertas/generar para pruebas o ejecución bajo demanda.
    */
-  async generarAlertas(): Promise<{ creadas: number; resueltas: number }> {
+  async generarAlertas(): Promise<{ creadas: number; resueltas: number; nuevas: Alerta[] }> {
     let creadas = 0;
     let resueltas = 0;
+    let nuevas: Alerta[] = [];
 
     const resultados = await Promise.all([
       this.evaluarExpedientesSinMovimiento(),
@@ -111,15 +116,17 @@ export class AlertasService implements OnModuleInit {
       this.evaluarDocumentosVencidos(),
       this.evaluarRequisitosPendientesVencidos(),
       this.evaluarEventosAgenda(),
+      this.evaluarFacturasVencidas(),
     ]);
 
     for (const r of resultados) {
       creadas += r.creadas;
       resueltas += r.resueltas;
+      nuevas = nuevas.concat(r.nuevas);
     }
 
     this.logger.log(`Motor de alertas: ${creadas} creadas, ${resueltas} resueltas`);
-    return { creadas, resueltas };
+    return { creadas, resueltas, nuevas };
   }
 
   // --- Reglas individuales ---
@@ -128,7 +135,7 @@ export class AlertasService implements OnModuleInit {
     const config = await this.configRepo.findOne({
       where: { tipoRegla: TipoReglaAlerta.EXPEDIENTE_SIN_MOVIMIENTO },
     });
-    if (!config?.activa) return { creadas: 0, resueltas: 0 };
+    if (!config?.activa) return { creadas: 0, resueltas: 0, nuevas: [] as Alerta[] };
 
     const limite = new Date();
     limite.setDate(limite.getDate() - (config.umbralDias ?? 15));
@@ -160,7 +167,7 @@ export class AlertasService implements OnModuleInit {
       where: { estado: Not(In(ESTADOS_EXPEDIENTE_CERRADOS)) },
     });
 
-    let resultado = { creadas: 0, resueltas: 0 };
+    let resultado = { creadas: 0, resueltas: 0, nuevas: [] as Alerta[] };
 
     if (configVencido?.activa) {
       const vencidos = expedientesActivos.filter((e) => e.fechaLimite && e.fechaLimite < hoy);
@@ -172,6 +179,7 @@ export class AlertasService implements OnModuleInit {
       const r = await this.sincronizar(TipoReglaAlerta.PLAZO_VENCIDO, 'expedienteId', candidatos);
       resultado.creadas += r.creadas;
       resultado.resueltas += r.resueltas;
+      resultado.nuevas = resultado.nuevas.concat(r.nuevas);
     }
 
     if (configProximo?.activa) {
@@ -190,6 +198,7 @@ export class AlertasService implements OnModuleInit {
       const r = await this.sincronizar(TipoReglaAlerta.PLAZO_PROXIMO, 'expedienteId', candidatos);
       resultado.creadas += r.creadas;
       resultado.resueltas += r.resueltas;
+      resultado.nuevas = resultado.nuevas.concat(r.nuevas);
     }
 
     return resultado;
@@ -199,7 +208,7 @@ export class AlertasService implements OnModuleInit {
     const config = await this.configRepo.findOne({
       where: { tipoRegla: TipoReglaAlerta.DOCUMENTO_VENCIDO },
     });
-    if (!config?.activa) return { creadas: 0, resueltas: 0 };
+    if (!config?.activa) return { creadas: 0, resueltas: 0, nuevas: [] as Alerta[] };
 
     const hoy = new Date().toISOString().slice(0, 10);
     const documentos = await this.documentoRepo
@@ -222,7 +231,7 @@ export class AlertasService implements OnModuleInit {
     const config = await this.configRepo.findOne({
       where: { tipoRegla: TipoReglaAlerta.REQUISITO_PENDIENTE_VENCIDO },
     });
-    if (!config?.activa) return { creadas: 0, resueltas: 0 };
+    if (!config?.activa) return { creadas: 0, resueltas: 0, nuevas: [] as Alerta[] };
 
     const hoy = new Date().toISOString().slice(0, 10);
     const requisitos = await this.requisitoRepo
@@ -246,6 +255,31 @@ export class AlertasService implements OnModuleInit {
     return this.sincronizar(TipoReglaAlerta.REQUISITO_PENDIENTE_VENCIDO, 'expedienteId', candidatos);
   }
 
+  private async evaluarFacturasVencidas() {
+    const config = await this.configRepo.findOne({
+      where: { tipoRegla: TipoReglaAlerta.FACTURA_VENCIDA },
+    });
+    if (!config?.activa) return { creadas: 0, resueltas: 0, nuevas: [] as Alerta[] };
+
+    const hoy = new Date().toISOString().slice(0, 10);
+    const facturas = await this.facturaRepo
+      .createQueryBuilder('f')
+      .where('f.estado IN (:...estados)', {
+        estados: [EstadoFactura.PENDIENTE, EstadoFactura.PAGADA_PARCIAL],
+      })
+      .andWhere('f.fechaVencimiento IS NOT NULL')
+      .andWhere('f.fechaVencimiento < :hoy', { hoy })
+      .getMany();
+
+    const candidatos: CandidatoAlerta[] = facturas.map((f) => ({
+      entidadId: f.id,
+      mensaje: `La factura ${f.numero} está vencida desde el ${f.fechaVencimiento} con un saldo de RD$ ${(Number(f.total) - Number(f.montoPagado)).toFixed(2)}.`,
+      severidad: config.severidadDefault,
+    }));
+
+    return this.sincronizar(TipoReglaAlerta.FACTURA_VENCIDA, 'facturaId', candidatos);
+  }
+
   private async evaluarEventosAgenda() {
     const [configProximo, configVencido] = await Promise.all([
       this.configRepo.findOne({ where: { tipoRegla: TipoReglaAlerta.EVENTO_PROXIMO } }),
@@ -260,7 +294,7 @@ export class AlertasService implements OnModuleInit {
       })
       .getMany();
 
-    let resultado = { creadas: 0, resueltas: 0 };
+    let resultado = { creadas: 0, resueltas: 0, nuevas: [] as Alerta[] };
 
     if (configVencido?.activa) {
       const vencidos = eventosActivos.filter((e) => e.fechaHoraInicio < ahora);
@@ -272,6 +306,7 @@ export class AlertasService implements OnModuleInit {
       const r = await this.sincronizar(TipoReglaAlerta.EVENTO_VENCIDO, 'agendaEventoId', candidatos);
       resultado.creadas += r.creadas;
       resultado.resueltas += r.resueltas;
+      resultado.nuevas = resultado.nuevas.concat(r.nuevas);
     }
 
     if (configProximo?.activa) {
@@ -289,6 +324,7 @@ export class AlertasService implements OnModuleInit {
       const r = await this.sincronizar(TipoReglaAlerta.EVENTO_PROXIMO, 'agendaEventoId', candidatos);
       resultado.creadas += r.creadas;
       resultado.resueltas += r.resueltas;
+      resultado.nuevas = resultado.nuevas.concat(r.nuevas);
     }
 
     return resultado;
@@ -304,12 +340,13 @@ export class AlertasService implements OnModuleInit {
     tipoRegla: TipoReglaAlerta,
     campo: CampoEntidad,
     candidatos: CandidatoAlerta[],
-  ): Promise<{ creadas: number; resueltas: number }> {
+  ): Promise<{ creadas: number; resueltas: number; nuevas: Alerta[] }> {
     const abiertas = await this.alertaRepo.find({ where: { tipoRegla, resuelta: false } });
     const abiertasPorEntidad = new Map(abiertas.map((a) => [a[campo] ?? '', a]));
     const idsCandidatos = new Set(candidatos.map((c) => c.entidadId));
 
     let creadas = 0;
+    const nuevas: Alerta[] = [];
     for (const candidato of candidatos) {
       if (!abiertasPorEntidad.has(candidato.entidadId)) {
         const nueva = this.alertaRepo.create({
@@ -318,7 +355,8 @@ export class AlertasService implements OnModuleInit {
           mensaje: candidato.mensaje,
           [campo]: candidato.entidadId,
         });
-        await this.alertaRepo.save(nueva);
+        const guardada = await this.alertaRepo.save(nueva);
+        nuevas.push(guardada);
         creadas++;
       }
     }
@@ -332,6 +370,6 @@ export class AlertasService implements OnModuleInit {
       }
     }
 
-    return { creadas, resueltas };
+    return { creadas, resueltas, nuevas };
   }
 }
