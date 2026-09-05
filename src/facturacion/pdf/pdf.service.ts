@@ -181,6 +181,20 @@ export class PdfService {
       pageMargins: [MARGEN, 122, MARGEN, 55],
       defaultStyle: { font: 'Helvetica', fontSize: 9.5, lineHeight: 1.2 },
 
+      // Marca de agua institucional: el mismo logo del encabezado, centrado
+      // en la página y casi transparente (6% de opacidad), detrás de todo
+      // el contenido -- se repite en cada página automáticamente porque
+      // pdfmake vuelve a invocar `background` por cada una.
+      background: (_currentPage: number, pageSize: { width: number; height: number }) => {
+        const lado = Math.min(pageSize.width, pageSize.height) * 0.55;
+        return {
+          image: LOGO_JAYM_BASE64,
+          width: lado,
+          opacity: 0.06,
+          absolutePosition: { x: (pageSize.width - lado) / 2, y: (pageSize.height - lado) / 2 },
+        };
+      },
+
       header: () => ({
         margin: [MARGEN, 20, MARGEN, 0],
         stack: [

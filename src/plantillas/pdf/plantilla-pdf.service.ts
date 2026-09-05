@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import pdfMake from 'pdfmake';
 import { MARCA_CORPORATIVA } from '../../common/constants/marca-corporativa.js';
+// Mismo logo institucional que ya usan facturas/cotizaciones (src/facturacion/pdf) --
+// se reutiliza desde ahí en vez de duplicar el base64 en el repositorio.
+import { LOGO_JAYM_BASE64 } from '../../facturacion/pdf/logo-base64.js';
 
 // Mismo setup de fuentes que src/facturacion/pdf/pdf.service.ts -- pdfmake
 // exige declarar explícitamente qué nombres de fuente/URL están permitidos,
@@ -39,8 +42,50 @@ export class PlantillaPdfService {
   async generarDocumentoPdf(titulo: string, cuerpo: string): Promise<Buffer> {
     const docDefinition: any = {
       pageSize: 'LETTER',
-      pageMargins: [MARGEN, 70, MARGEN, 60],
+      pageMargins: [MARGEN, 92, MARGEN, 60],
       defaultStyle: { font: 'Helvetica', fontSize: 10.5, lineHeight: 1.35 },
+
+      // Misma marca de agua institucional que facturas/cotizaciones --
+      // logo centrado, casi transparente, repetido en cada página.
+      background: (_currentPage: number, pageSize: { width: number; height: number }) => {
+        const lado = Math.min(pageSize.width, pageSize.height) * 0.55;
+        return {
+          image: LOGO_JAYM_BASE64,
+          width: lado,
+          opacity: 0.06,
+          absolutePosition: { x: (pageSize.width - lado) / 2, y: (pageSize.height - lado) / 2 },
+        };
+      },
+
+      header: () => ({
+        margin: [MARGEN, 18, MARGEN, 0],
+        stack: [
+          {
+            // Mismo truco que en facturas/cotizaciones (src/facturacion/pdf/pdf.service.ts):
+            // el logo va en una columna de ancho fijo y hay una columna vacía
+            // idéntica del otro lado, para que el texto central quede
+            // realmente centrado en la hoja y no recorrido por el logo.
+            columns: [
+              { width: 42, stack: [{ image: LOGO_JAYM_BASE64, width: 36 }] },
+              {
+                width: '*',
+                alignment: 'center',
+                stack: [
+                  { text: MARCA_CORPORATIVA.razonSocial, bold: true, fontSize: 10, color: '#0a1e3f' },
+                  { text: MARCA_CORPORATIVA.eslogan, italics: true, fontSize: 7, color: '#888888', margin: [0, 1, 0, 0] },
+                ],
+              },
+              { width: 42, stack: [] },
+            ],
+          },
+          {
+            canvas: [
+              { type: 'line', x1: 0, y1: 6, x2: ANCHO_CONTENIDO, y2: 6, lineWidth: 1, lineColor: '#b8963e' },
+              { type: 'line', x1: 0, y1: 8.5, x2: ANCHO_CONTENIDO, y2: 8.5, lineWidth: 0.5, lineColor: '#5b2a86' },
+            ],
+          },
+        ],
+      }),
 
       footer: (currentPage: number, pageCount: number) => ({
         margin: [MARGEN, 0, MARGEN, 18],
