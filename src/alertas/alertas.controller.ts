@@ -3,6 +3,8 @@ import { AlertasService } from './alertas.service.js';
 import { SeveridadAlerta, TipoReglaAlerta, RolUsuario } from '../common/enums/index.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
+import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
+import type { JwtPayloadUsuario } from '../auth/decorators/current-user.decorator.js';
 
 @Controller('alertas')
 export class AlertasController {
@@ -10,20 +12,24 @@ export class AlertasController {
 
   @Get()
   listar(
+    @CurrentUser() usuario: JwtPayloadUsuario,
     @Query('resuelta') resuelta?: string,
     @Query('severidad') severidad?: SeveridadAlerta,
     @Query('expedienteId') expedienteId?: string,
   ) {
-    return this.alertasService.listar({
-      resuelta: resuelta === undefined ? undefined : resuelta === 'true',
-      severidad,
-      expedienteId,
-    });
+    return this.alertasService.listar(
+      {
+        resuelta: resuelta === undefined ? undefined : resuelta === 'true',
+        severidad,
+        expedienteId,
+      },
+      { id: usuario.sub, rol: usuario.rol as RolUsuario },
+    );
   }
 
   @Patch(':id/vista')
-  marcarVista(@Param('id') id: string) {
-    return this.alertasService.marcarVista(id);
+  marcarVista(@Param('id') id: string, @CurrentUser() usuario: JwtPayloadUsuario) {
+    return this.alertasService.marcarVista(id, { id: usuario.sub, rol: usuario.rol as RolUsuario });
   }
 
   // Disparo manual del motor de reglas — útil para pruebas y para un botón

@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException, OnModuleInit, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, In, LessThan, Repository } from 'typeorm';
 import { Alerta } from './alerta.entity.js';
@@ -15,7 +15,18 @@ import {
   EstadoRequisito,
   EstadoEventoAgenda,
   EstadoFactura,
+  RolUsuario,
+  ROLES_CON_VISIBILIDAD_TOTAL_EXPEDIENTES,
 } from '../common/enums/index.js';
+
+// Datos mínimos del usuario autenticado -- misma forma que UsuarioActual en
+// ExpedientesService, pero declarada localmente para no crear una
+// dependencia hacia ese módulo (aquí basta con el repositorio de
+// Expediente, ya registrado en AlertasModule para las reglas del motor).
+interface UsuarioActualAlertas {
+  id: string;
+  rol: RolUsuario;
+}
 
 type CampoEntidad = 'expedienteId' | 'documentoId' | 'agendaEventoId' | 'facturaId';
 
@@ -84,19 +95,59 @@ export class AlertasService implements OnModuleInit {
     return this.configRepo.findOneByOrFail({ tipoRegla });
   }
 
-  async listar(filtros: {
-    resuelta?: boolean;
-    severidad?: SeveridadAlerta;
-    expedienteId?: string;
-  }): Promise<Alerta[]> {
+  /**
+   * Sin usuarioActual (llamadas internas) devuelve todo, igual que antes.
+   * Con usuarioActual, aplica la regla documentada en el campo
+   * usuarioDestinatarioId de la entidad Alerta ("nulo = visible para todo
+   * el que tenga acceso al expediente asociado"): visible si la alerta es
+   * suya explícitamente, o si no tiene destinatario y (no está ligada a un
+   * expediente, o el expediente le pertenece / no tiene responsable).
+   */
+  async listar(
+    filtros: {
+      resuelta?: boolean;
+      severidad?: SeveridadAlerta;
+      expedienteId?: string;
+    },
+    usuarioActual?: UsuarioActualAlertas,
+  ): Promise<Alerta[]> {
     const qb = this.alertaRepo.createQueryBuilder('a');
     if (filtros.resuelta !== undefined) qb.andWhere('a.resuelta = :r', { r: filtros.resuelta });
     if (filtros.severidad) qb.andWhere('a.severidad = :s', { s: filtros.severidad });
     if (filtros.expedienteId) qb.andWhere('a.expedienteId = :e', { e: filtros.expedienteId });
+
+    if (usuarioActual && !ROLES_CON_VISIBILIDAD_TOTAL_EXPEDIENTES.includes(usuarioActual.rol)) {
+      qb.leftJoin('expedientes', 'exp', 'exp.id = a."expedienteId"');
+      qb.andWhere(
+        '(a."usuarioDestinatarioId" = :miId OR (a."usuarioDestinatarioId" IS NULL AND (a."expedienteId" IS NULL OR exp."abogadoResponsableId" = :miId OR exp."abogadoResponsableId" IS NULL)))',
+        { miId: usuarioActual.id },
+      );
+    }
+
     return qb.orderBy('a.creadoEn', 'DESC').getMany();
   }
 
-  async marcarVista(id: string): Promise<void> {
+  /** Misma regla de visibilidad que listar(), evaluada para una sola alerta. */
+  private async esVisiblePorUsuario(
+    alerta: Alerta,
+    usuarioActual: UsuarioActualAlertas,
+  ): Promise<boolean> {
+    if (ROLES_CON_VISIBILIDAD_TOTAL_EXPEDIENTES.includes(usuarioActual.rol)) return true;
+    if (alerta.usuarioDestinatarioId) return alerta.usuarioDestinatarioId === usuarioActual.id;
+    if (!alerta.expedienteId) return true;
+    const expediente = await this.expedienteRepo.findOne({ where: { id: alerta.expedienteId } });
+    if (!expediente) return true; // referencia huérfana -- no ocultar por un problema de datos
+    return !expediente.abogadoResponsableId || expediente.abogadoResponsableId === usuarioActual.id;
+  }
+
+  async marcarVista(id: string, usuarioActual?: UsuarioActualAlertas): Promise<void> {
+    if (usuarioActual) {
+      const alerta = await this.alertaRepo.findOne({ where: { id } });
+      if (!alerta) throw new NotFoundException('Alerta no encontrada');
+      if (!(await this.esVisiblePorUsuario(alerta, usuarioActual))) {
+        throw new ForbiddenException('Esta alerta no te pertenece.');
+      }
+    }
     await this.alertaRepo.update(id, { vista: true, vistaEn: new Date() });
   }
 

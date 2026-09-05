@@ -7,9 +7,16 @@ import { GoogleCalendarModule } from '../integraciones/google-calendar/google-ca
 import { NotificacionesModule } from '../notificaciones/notificaciones.module.js';
 import { UsuariosModule } from '../usuarios/usuarios.module.js';
 import { AgendaScheduler } from './agenda.scheduler.js';
+import { ExpedientesModule } from '../expedientes/expedientes.module.js';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([AgendaEvento]), GoogleCalendarModule, NotificacionesModule, UsuariosModule],
+  imports: [
+    TypeOrmModule.forFeature([AgendaEvento]),
+    GoogleCalendarModule,
+    NotificacionesModule,
+    UsuariosModule,
+    ExpedientesModule,
+  ],
   controllers: [AgendaController],
   providers: [AgendaService, AgendaScheduler],
   exports: [AgendaService],
