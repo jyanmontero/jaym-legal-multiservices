@@ -9,6 +9,7 @@ import { Cliente } from './cliente.entity.js';
 import { CreateClienteDto, UpdateClienteDto } from './dto/create-cliente.dto.js';
 import { EstadoCliente, TipoCliente } from '../common/enums/index.js';
 import { HistorialCambiosService } from '../historial-cambios/historial-cambios.service.js';
+import { parsearPaginacion, type ResultadoPaginado } from '../common/paginacion/paginacion.js';
 
 export interface PosibleDuplicado {
   campo: 'cedula' | 'pasaporte' | 'rnc' | 'correo';
@@ -106,7 +107,20 @@ export class ClientesService {
     }
   }
 
-  async buscar(termino?: string, tipo?: TipoCliente): Promise<Cliente[]> {
+  // Igual que ExpedientesService.listar(): sin un tercer argumento, sigue
+  // devolviendo Cliente[] completo (así el buscador global y el asistente,
+  // que llaman a este método con un solo argumento, no se ven afectados).
+  async buscar(termino?: string, tipo?: TipoCliente): Promise<Cliente[]>;
+  async buscar(
+    termino: string | undefined,
+    tipo: TipoCliente | undefined,
+    paginacion: { pagina?: string; porPagina?: string },
+  ): Promise<Cliente[] | ResultadoPaginado<Cliente>>;
+  async buscar(
+    termino?: string,
+    tipo?: TipoCliente,
+    paginacion?: { pagina?: string; porPagina?: string },
+  ): Promise<Cliente[] | ResultadoPaginado<Cliente>> {
     const qb = this.clienteRepo.createQueryBuilder('cliente');
 
     if (tipo) {
@@ -123,7 +137,16 @@ export class ClientesService {
       );
     }
 
-    return qb.orderBy('cliente.creadoEn', 'DESC').getMany();
+    qb.orderBy('cliente.creadoEn', 'DESC');
+
+    // Paginación opcional (hallazgo de la auditoría) -- sin pagina/porPagina
+    // en la query, se comporta exactamente igual que antes.
+    const params = parsearPaginacion(paginacion?.pagina, paginacion?.porPagina);
+    if (!params) return qb.getMany();
+
+    qb.skip((params.pagina - 1) * params.porPagina).take(params.porPagina);
+    const [datos, total] = await qb.getManyAndCount();
+    return { datos, total, pagina: params.pagina, porPagina: params.porPagina };
   }
 
   async obtenerPorId(id: string): Promise<Cliente> {
@@ -160,26 +183,41 @@ export class ClientesService {
       }
     }
 
-    return this.dataSource.transaction(async (manager) => {
-      const clienteRepo = manager.getRepository(Cliente);
-      clienteRepo.merge(cliente, dto);
-      const guardado = await clienteRepo.save(cliente);
+    try {
+      return await this.dataSource.transaction(async (manager) => {
+        const clienteRepo = manager.getRepository(Cliente);
+        clienteRepo.merge(cliente, dto);
+        const guardado = await clienteRepo.save(cliente);
 
-      if (usuarioId) {
-        await this.historialCambiosService.registrarCambio(
-          {
-            entidadTipo: 'cliente',
-            entidadId: id,
-            snapshotAnterior,
-            snapshotNuevo: { ...guardado },
-            usuarioId,
-          },
-          manager,
+        if (usuarioId) {
+          await this.historialCambiosService.registrarCambio(
+            {
+              entidadTipo: 'cliente',
+              entidadId: id,
+              snapshotAnterior,
+              snapshotNuevo: { ...guardado },
+              usuarioId,
+            },
+            manager,
+          );
+        }
+
+        return guardado;
+      });
+    } catch (err: any) {
+      if (err.code === '23505') {
+        // Misma última línea de defensa que en crear(): el chequeo de
+        // arriba no detecta todo (ej. carrera entre dos ediciones
+        // simultáneas), así que sin esto una colisión real a nivel de
+        // índice único se colaba como un 500 genérico en vez de un 409
+        // explicable (hallazgo del 04/09/2026, junto con el Transform de
+        // cedula/pasaporte/rnc en el DTO).
+        throw new ConflictException(
+          'Ya existe otro cliente con la misma cédula, pasaporte, RNC o correo.',
         );
       }
-
-      return guardado;
-    });
+      throw err;
+    }
   }
 
   async historial(id: string) {

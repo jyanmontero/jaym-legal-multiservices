@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -7,8 +7,14 @@ import { CreateUsuarioDto } from './dto/create-usuario.dto.js';
 import { EstadoUsuario, RolUsuario } from '../common/enums/index.js';
 import { HistorialCambiosService } from '../historial-cambios/historial-cambios.service.js';
 import { CifradoService } from '../common/cifrado/cifrado.service.js';
+import { parsearPaginacion, type ResultadoPaginado } from '../common/paginacion/paginacion.js';
 
 const SALT_ROUNDS = 12;
+
+// Clave arbitraria de 64 bits para el advisory lock de registro-inicial --
+// solo tiene que ser una constante fija y estable entre despliegues, no
+// significa nada fuera de este archivo.
+const LOCK_REGISTRO_INICIAL = 875_501_223_001;
 
 export type UsuarioPublico = Omit<Usuario, 'passwordHash' | 'dosFactorSecreto'>;
 
@@ -48,6 +54,41 @@ export class UsuariosService {
     return this.aPublico(guardado);
   }
 
+  /**
+   * Usado solo por POST /auth/registro-inicial. Antes el controller
+   * verificaba "¿existe algún usuario?" y creaba el superadministrador en
+   * dos pasos separados sin transacción -- dos solicitudes casi simultáneas
+   * en el instante exacto del primer arranque podían, en teoría, crear dos
+   * superadministradores en vez de uno (hallazgo informativo de la
+   * auditoría de resistencia y seguridad). El advisory lock de Postgres
+   * serializa cualquier llamada concurrente a este método: la segunda
+   * espera a que la primera transacción termine y entonces sí ve que ya
+   * existe un usuario.
+   */
+  async crearPrimerSuperadministrador(dto: CreateUsuarioDto): Promise<UsuarioPublico> {
+    return this.dataSource.transaction(async (manager) => {
+      await manager.query('SELECT pg_advisory_xact_lock($1::bigint)', [LOCK_REGISTRO_INICIAL]);
+
+      const yaExisteAlguno = await manager.getRepository(Usuario).exists();
+      if (yaExisteAlguno) {
+        throw new BadRequestException(
+          'Ya existe al menos un usuario en el sistema. Use POST /usuarios (requiere sesión de Superadministrador) para crear cuentas adicionales.',
+        );
+      }
+
+      const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
+      const usuario = manager.getRepository(Usuario).create({
+        nombreCompleto: dto.nombreCompleto,
+        correo: dto.correo,
+        passwordHash,
+        rol: RolUsuario.SUPERADMINISTRADOR,
+        estado: EstadoUsuario.ACTIVO,
+      });
+      const guardado = await manager.getRepository(Usuario).save(usuario);
+      return this.aPublico(guardado);
+    });
+  }
+
   // Usado únicamente por AuthService para validar login — sí incluye el hash.
   // El secreto de 2FA se descifra aquí mismo (ver CifradoService) para que
   // AuthService siga trabajando con el valor real sin saber que está
@@ -78,9 +119,33 @@ export class UsuariosService {
     return usuarios.map((u) => ({ id: u.id, nombreCompleto: u.nombreCompleto, rol: u.rol }));
   }
 
-  async listar(): Promise<UsuarioPublico[]> {
-    const usuarios = await this.usuarioRepo.find({ order: { creadoEn: 'DESC' } });
-    return usuarios.map((u) => this.aPublico(u));
+  // Sin argumento, sigue devolviendo UsuarioPublico[] completo tal cual
+  // antes (así el scheduler de Google Calendar, que llama a este método sin
+  // argumentos, no se ve afectado por la paginación opcional).
+  async listar(): Promise<UsuarioPublico[]>;
+  async listar(paginacion: { pagina?: string; porPagina?: string }): Promise<
+    UsuarioPublico[] | ResultadoPaginado<UsuarioPublico>
+  >;
+  async listar(
+    paginacion?: { pagina?: string; porPagina?: string },
+  ): Promise<UsuarioPublico[] | ResultadoPaginado<UsuarioPublico>> {
+    const params = parsearPaginacion(paginacion?.pagina, paginacion?.porPagina);
+    if (!params) {
+      const usuarios = await this.usuarioRepo.find({ order: { creadoEn: 'DESC' } });
+      return usuarios.map((u) => this.aPublico(u));
+    }
+
+    const [usuarios, total] = await this.usuarioRepo.findAndCount({
+      order: { creadoEn: 'DESC' },
+      skip: (params.pagina - 1) * params.porPagina,
+      take: params.porPagina,
+    });
+    return {
+      datos: usuarios.map((u) => this.aPublico(u)),
+      total,
+      pagina: params.pagina,
+      porPagina: params.porPagina,
+    };
   }
 
   async marcarUltimoAcceso(id: string): Promise<void> {

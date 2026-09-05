@@ -9,6 +9,7 @@ import { JwtStrategy } from './strategies/jwt.strategy.js';
 import { UsuariosModule } from '../usuarios/usuarios.module.js';
 import { PasswordResetToken } from './password-reset-token.entity.js';
 import { NotificacionesModule } from '../notificaciones/notificaciones.module.js';
+import { obtenerJwtSecretObligatorio } from '../common/config/jwt-secret.js';
 
 @Module({
   imports: [
@@ -20,7 +21,7 @@ import { NotificacionesModule } from '../notificaciones/notificaciones.module.js
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET') ?? 'inseguro-cambiar-en-.env',
+        secret: obtenerJwtSecretObligatorio(config),
         signOptions: {
           expiresIn: (config.get<string>('JWT_EXPIRES_IN') ?? '8h') as any,
         },

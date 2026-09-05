@@ -8,3 +8,9 @@ _pruebas_borrar/
 prueba-factura-TEST.pdf
 .pdf-preview-tmp/
 scripts/estado-migracion.json
+
+# Datos reales de clientes de la migración de Brisk Invoicing -- no deben
+# vivir en git (ver auditoria de seguridad). Ya estaba comiteado antes de
+# este cambio; sigue en el historial local hasta que se decida reescribirlo.
+scripts/datos-brisk.json
+tsconfig.build.tsbuildinfo

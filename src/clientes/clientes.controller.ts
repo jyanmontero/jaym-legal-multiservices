@@ -19,7 +19,15 @@ export class ClientesController {
   constructor(private readonly clientesService: ClientesService) {}
 
   @Get()
-  buscar(@Query('q') q?: string, @Query('tipo') tipo?: TipoCliente) {
+  buscar(
+    @Query('q') q?: string,
+    @Query('tipo') tipo?: TipoCliente,
+    @Query('pagina') pagina?: string,
+    @Query('porPagina') porPagina?: string,
+  ) {
+    if (pagina !== undefined || porPagina !== undefined) {
+      return this.clientesService.buscar(q, tipo, { pagina, porPagina });
+    }
     return this.clientesService.buscar(q, tipo);
   }
 

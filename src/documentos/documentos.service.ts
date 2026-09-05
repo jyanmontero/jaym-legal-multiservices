@@ -14,7 +14,10 @@ import { SubirDocumentoDto } from './dto/subir-documento.dto.js';
 import {
   RolUsuario,
   ROLES_CON_ACCESO_CONFIDENCIAL_POR_DEFECTO,
+  ROLES_CON_VISIBILIDAD_TOTAL_EXPEDIENTES,
 } from '../common/enums/index.js';
+import { ExpedientesService, type UsuarioActual } from '../expedientes/expedientes.service.js';
+import { parsearPaginacion, type ResultadoPaginado } from '../common/paginacion/paginacion.js';
 
 export const CARPETA_ALMACENAMIENTO = path.resolve(process.cwd(), 'storage', 'documentos');
 
@@ -25,6 +28,7 @@ export class DocumentosService {
     private readonly documentoRepo: Repository<Documento>,
     @InjectRepository(DocumentoPermiso)
     private readonly permisoRepo: Repository<DocumentoPermiso>,
+    private readonly expedientesService: ExpedientesService,
   ) {}
 
   async subir(
@@ -88,11 +92,23 @@ export class DocumentosService {
    * ninguna otra fila apunta como `documentoPadreId`, y que no está en
    * la papelera.
    */
-  async listar(filtros: {
-    expedienteId?: string;
-    clienteId?: string;
-    categoria?: string;
-  }): Promise<Documento[]> {
+  async listar(
+    filtros: {
+      expedienteId?: string;
+      clienteId?: string;
+      categoria?: string;
+    },
+    usuarioActual?: UsuarioActual,
+    paginacion?: { pagina?: string; porPagina?: string },
+  ): Promise<Documento[] | ResultadoPaginado<Documento>> {
+    // Si se pide un expediente puntual, que documentos respete exactamente
+    // la misma regla de visibilidad que ya se aplica al propio expediente
+    // (hallazgo de la auditoría: antes esta ruta no la consultaba en
+    // absoluto). Lanza 403/404 igual que GET /expedientes/:id.
+    if (filtros.expedienteId) {
+      await this.expedientesService.verificarVisibilidadPorId(filtros.expedienteId, usuarioActual);
+    }
+
     const qb = this.documentoRepo
       .createQueryBuilder('d')
       .leftJoin('documentos', 'hijo', 'hijo."documentoPadreId" = d.id')
@@ -103,13 +119,52 @@ export class DocumentosService {
     if (filtros.clienteId) qb.andWhere('d.clienteId = :c', { c: filtros.clienteId });
     if (filtros.categoria) qb.andWhere('d.categoria = :cat', { cat: filtros.categoria });
 
-    return qb.orderBy('d.subidoEn', 'DESC').getMany();
+    // Defensa en profundidad para el listado sin filtrar por expediente
+    // (ej. GET /documentos a secas): sin esto, un abogado sin visibilidad
+    // total vería igual los documentos de casos ajenos con solo omitir el
+    // filtro expedienteId. Mismo criterio que ExpedientesService.listar().
+    if (
+      !filtros.expedienteId &&
+      usuarioActual &&
+      !ROLES_CON_VISIBILIDAD_TOTAL_EXPEDIENTES.includes(usuarioActual.rol)
+    ) {
+      qb.leftJoin('expedientes', 'exp', 'exp.id = d."expedienteId"');
+      qb.andWhere(
+        '(d."expedienteId" IS NULL OR exp."abogadoResponsableId" = :miId OR exp."abogadoResponsableId" IS NULL)',
+        { miId: usuarioActual.id },
+      );
+    }
+
+    qb.orderBy('d.subidoEn', 'DESC');
+
+    // Paginación opcional (hallazgo de la auditoría) -- sin pagina/porPagina
+    // en la query, se comporta exactamente igual que antes.
+    const params = parsearPaginacion(paginacion?.pagina, paginacion?.porPagina);
+    if (!params) return qb.getMany();
+
+    qb.skip((params.pagina - 1) * params.porPagina).take(params.porPagina);
+    const [datos, total] = await qb.getManyAndCount();
+    return { datos, total, pagina: params.pagina, porPagina: params.porPagina };
   }
 
   async obtenerPorId(id: string): Promise<Documento> {
     const documento = await this.documentoRepo.findOne({ where: { id } });
     if (!documento) throw new NotFoundException('Documento no encontrado');
     return documento;
+  }
+
+  /**
+   * Confirma que el expediente dueño de este documento (si tiene uno) es
+   * visible para el usuario actual, antes de dejarlo ver o descargar el
+   * archivo. Documentos sin expedienteId (adjuntos sueltos a un cliente)
+   * no tienen este control — un cliente no tiene "abogado responsable".
+   */
+  async verificarVisibilidadDocumento(
+    documento: Documento,
+    usuarioActual?: UsuarioActual,
+  ): Promise<void> {
+    if (!documento.expedienteId) return;
+    await this.expedientesService.verificarVisibilidadPorId(documento.expedienteId, usuarioActual);
   }
 
   /** Devuelve toda la cadena de versiones de un documento, más reciente primero. */

@@ -16,6 +16,7 @@ import { CreatePagoDto } from './dto/pago.dto.js';
 import { calcularTotales } from './item-facturable.js';
 import { EstadoCotizacion, EstadoFactura, TipoCliente } from '../common/enums/index.js';
 import { HistorialCambiosService } from '../historial-cambios/historial-cambios.service.js';
+import { parsearPaginacion, type ResultadoPaginado } from '../common/paginacion/paginacion.js';
 
 function hoyISO(): string {
   return new Date().toISOString().slice(0, 10);
@@ -91,19 +92,34 @@ export class FacturacionService {
     return this.cotizacionRepo.save(cotizacion);
   }
 
-  async listarCotizaciones(filtros: {
-    clienteId?: string;
-    expedienteId?: string;
-    estado?: EstadoCotizacion;
-  }): Promise<Cotizacion[]> {
-    return this.cotizacionRepo.find({
-      where: {
-        ...(filtros.clienteId ? { clienteId: filtros.clienteId } : {}),
-        ...(filtros.expedienteId ? { expedienteId: filtros.expedienteId } : {}),
-        ...(filtros.estado ? { estado: filtros.estado } : {}),
-      },
+  async listarCotizaciones(
+    filtros: {
+      clienteId?: string;
+      expedienteId?: string;
+      estado?: EstadoCotizacion;
+    },
+    paginacion?: { pagina?: string; porPagina?: string },
+  ): Promise<Cotizacion[] | ResultadoPaginado<Cotizacion>> {
+    const where = {
+      ...(filtros.clienteId ? { clienteId: filtros.clienteId } : {}),
+      ...(filtros.expedienteId ? { expedienteId: filtros.expedienteId } : {}),
+      ...(filtros.estado ? { estado: filtros.estado } : {}),
+    };
+
+    // Paginación opcional (hallazgo de la auditoría) -- sin pagina/porPagina
+    // en la query, se comporta exactamente igual que antes.
+    const params = parsearPaginacion(paginacion?.pagina, paginacion?.porPagina);
+    if (!params) {
+      return this.cotizacionRepo.find({ where, order: { creadoEn: 'DESC' } });
+    }
+
+    const [datos, total] = await this.cotizacionRepo.findAndCount({
+      where,
       order: { creadoEn: 'DESC' },
+      skip: (params.pagina - 1) * params.porPagina,
+      take: params.porPagina,
     });
+    return { datos, total, pagina: params.pagina, porPagina: params.porPagina };
   }
 
   async obtenerCotizacion(id: string): Promise<Cotizacion> {
@@ -247,19 +263,34 @@ export class FacturacionService {
     );
   }
 
-  async listarFacturas(filtros: {
-    clienteId?: string;
-    expedienteId?: string;
-    estado?: EstadoFactura;
-  }): Promise<Factura[]> {
-    return this.facturaRepo.find({
-      where: {
-        ...(filtros.clienteId ? { clienteId: filtros.clienteId } : {}),
-        ...(filtros.expedienteId ? { expedienteId: filtros.expedienteId } : {}),
-        ...(filtros.estado ? { estado: filtros.estado } : {}),
-      },
+  async listarFacturas(
+    filtros: {
+      clienteId?: string;
+      expedienteId?: string;
+      estado?: EstadoFactura;
+    },
+    paginacion?: { pagina?: string; porPagina?: string },
+  ): Promise<Factura[] | ResultadoPaginado<Factura>> {
+    const where = {
+      ...(filtros.clienteId ? { clienteId: filtros.clienteId } : {}),
+      ...(filtros.expedienteId ? { expedienteId: filtros.expedienteId } : {}),
+      ...(filtros.estado ? { estado: filtros.estado } : {}),
+    };
+
+    // Paginación opcional (hallazgo de la auditoría) -- sin pagina/porPagina
+    // en la query, se comporta exactamente igual que antes.
+    const params = parsearPaginacion(paginacion?.pagina, paginacion?.porPagina);
+    if (!params) {
+      return this.facturaRepo.find({ where, order: { fechaEmision: 'DESC' } });
+    }
+
+    const [datos, total] = await this.facturaRepo.findAndCount({
+      where,
       order: { fechaEmision: 'DESC' },
+      skip: (params.pagina - 1) * params.porPagina,
+      take: params.porPagina,
     });
+    return { datos, total, pagina: params.pagina, porPagina: params.porPagina };
   }
 
   async obtenerFactura(id: string): Promise<Factura> {

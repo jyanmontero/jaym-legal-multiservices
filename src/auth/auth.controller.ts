@@ -11,8 +11,6 @@ import {
 import { CreateUsuarioDto } from '../usuarios/dto/create-usuario.dto.js';
 import { CurrentUser } from './decorators/current-user.decorator.js';
 import { Public } from './decorators/public.decorator.js';
-import { BadRequestException } from '@nestjs/common';
-import { RolUsuario } from '../common/enums/index.js';
 import { Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
@@ -40,13 +38,10 @@ export class AuthController {
   @Public()
   @Post('registro-inicial')
   async registroInicial(@Body() dto: CreateUsuarioDto) {
-    const usuariosExistentes = await this.usuariosService.listar();
-    if (usuariosExistentes.length > 0) {
-      throw new BadRequestException(
-        'Ya existe al menos un usuario en el sistema. Use POST /usuarios (requiere sesión de Superadministrador) para crear cuentas adicionales.',
-      );
-    }
-    return this.usuariosService.crear({ ...dto, rol: RolUsuario.SUPERADMINISTRADOR });
+    // La verificación de "¿existe algún usuario?" y la creación ocurren
+    // atómicamente dentro del servicio (advisory lock + misma transacción)
+    // -- ver UsuariosService.crearPrimerSuperadministrador() para el porqué.
+    return this.usuariosService.crearPrimerSuperadministrador(dto);
   }
 
   @Post('2fa/iniciar')

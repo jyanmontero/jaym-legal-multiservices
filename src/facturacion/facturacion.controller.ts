@@ -44,8 +44,13 @@ export class CotizacionesController {
     @Query('clienteId') clienteId?: string,
     @Query('expedienteId') expedienteId?: string,
     @Query('estado') estado?: EstadoCotizacion,
+    @Query('pagina') pagina?: string,
+    @Query('porPagina') porPagina?: string,
   ) {
-    return this.facturacionService.listarCotizaciones({ clienteId, expedienteId, estado });
+    return this.facturacionService.listarCotizaciones(
+      { clienteId, expedienteId, estado },
+      { pagina, porPagina },
+    );
   }
 
   @Get(':id')
@@ -107,8 +112,13 @@ export class FacturasController {
     @Query('clienteId') clienteId?: string,
     @Query('expedienteId') expedienteId?: string,
     @Query('estado') estado?: EstadoFactura,
+    @Query('pagina') pagina?: string,
+    @Query('porPagina') porPagina?: string,
   ) {
-    return this.facturacionService.listarFacturas({ clienteId, expedienteId, estado });
+    return this.facturacionService.listarFacturas(
+      { clienteId, expedienteId, estado },
+      { pagina, porPagina },
+    );
   }
 
   @Get(':id')

@@ -18,6 +18,7 @@ import { Alerta } from '../alertas/alerta.entity.js';
 import { ExpedienteRequisito } from '../requisitos/expediente-requisito.entity.js';
 import { AgendaEvento } from '../agenda/agenda-evento.entity.js';
 import { HistorialExpediente } from '../historial/historial-expediente.entity.js';
+import { parsearPaginacion, type ResultadoPaginado } from '../common/paginacion/paginacion.js';
 
 // Datos mínimos del usuario autenticado que necesita el control de
 // visibilidad por responsable -- ver ROLES_CON_VISIBILIDAD_TOTAL_EXPEDIENTES.
@@ -115,10 +116,37 @@ export class ExpedientesService {
     return expediente;
   }
 
+  /**
+   * Versión de verificarVisibilidad() para módulos que solo tienen el
+   * expedienteId a mano (ej. Documentos) y necesitan confirmar que el
+   * expediente dueño de un recurso es visible para el usuario actual, sin
+   * tener que duplicar la regla de responsable asignado en cada módulo.
+   * Lanza NotFoundException/ForbiddenException igual que obtenerPorId().
+   */
+  async verificarVisibilidadPorId(id: string, usuarioActual?: UsuarioActual): Promise<void> {
+    const expediente = await this.expedienteRepo.findOne({ where: { id } });
+    if (!expediente) throw new NotFoundException('Expediente no encontrado');
+    this.verificarVisibilidad(expediente, usuarioActual);
+  }
+
+  // Dos firmas: sin un tercer argumento, el resultado sigue siendo
+  // Expediente[] tal cual antes de este cambio (así el buscador global y
+  // cualquier otro llamador interno no necesitan tocarse ni narrowear un
+  // union type). Solo pasar `paginacion` explícitamente activa el otro modo.
+  async listar(
+    filtros?: { estado?: string; materia?: string; clienteId?: string; q?: string },
+    usuarioActual?: UsuarioActual,
+  ): Promise<Expediente[]>;
+  async listar(
+    filtros: { estado?: string; materia?: string; clienteId?: string; q?: string } | undefined,
+    usuarioActual: UsuarioActual | undefined,
+    paginacion: { pagina?: string; porPagina?: string },
+  ): Promise<Expediente[] | ResultadoPaginado<Expediente>>;
   async listar(
     filtros: { estado?: string; materia?: string; clienteId?: string; q?: string } = {},
     usuarioActual?: UsuarioActual,
-  ) {
+    paginacion?: { pagina?: string; porPagina?: string },
+  ): Promise<Expediente[] | ResultadoPaginado<Expediente>> {
     const qb = this.expedienteRepo.createQueryBuilder('e');
     if (filtros.estado) qb.andWhere('e.estado = :estado', { estado: filtros.estado });
     if (filtros.materia) qb.andWhere('e.materia = :materia', { materia: filtros.materia });
@@ -135,7 +163,17 @@ export class ExpedientesService {
         miId: usuarioActual.id,
       });
     }
-    return qb.orderBy('e.actualizadoEn', 'DESC').getMany();
+    qb.orderBy('e.actualizadoEn', 'DESC');
+
+    // Paginación opcional (hallazgo "ningún listado tiene paginación" de la
+    // auditoría) -- sin `pagina`/`porPagina` en la query, se comporta
+    // exactamente igual que antes: arreglo completo, sin límite.
+    const params = parsearPaginacion(paginacion?.pagina, paginacion?.porPagina);
+    if (!params) return qb.getMany();
+
+    qb.skip((params.pagina - 1) * params.porPagina).take(params.porPagina);
+    const [datos, total] = await qb.getManyAndCount();
+    return { datos, total, pagina: params.pagina, porPagina: params.porPagina };
   }
 
   /**

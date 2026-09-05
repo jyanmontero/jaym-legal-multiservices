@@ -31,11 +31,19 @@ export class ExpedientesController {
     @Query('materia') materia?: string,
     @Query('clienteId') clienteId?: string,
     @Query('q') q?: string,
+    @Query('pagina') pagina?: string,
+    @Query('porPagina') porPagina?: string,
   ) {
-    return this.expedientesService.listar(
-      { estado, materia, clienteId, q },
-      { id: usuario.sub, rol: usuario.rol as RolUsuario },
-    );
+    const usuarioActual = { id: usuario.sub, rol: usuario.rol as RolUsuario };
+    // Paginación opcional -- sin pagina/porPagina en la query, se devuelve
+    // el arreglo completo como siempre (ver ExpedientesService.listar()).
+    if (pagina !== undefined || porPagina !== undefined) {
+      return this.expedientesService.listar({ estado, materia, clienteId, q }, usuarioActual, {
+        pagina,
+        porPagina,
+      });
+    }
+    return this.expedientesService.listar({ estado, materia, clienteId, q }, usuarioActual);
   }
 
   @Get(':id')

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { UseGuards } from '@nestjs/common';
 import { UsuariosService } from './usuarios.service.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
@@ -14,7 +14,10 @@ export class UsuariosController {
   constructor(private readonly usuariosService: UsuariosService) {}
 
   @Get()
-  listar() {
+  listar(@Query('pagina') pagina?: string, @Query('porPagina') porPagina?: string) {
+    if (pagina !== undefined || porPagina !== undefined) {
+      return this.usuariosService.listar({ pagina, porPagina });
+    }
     return this.usuariosService.listar();
   }
 

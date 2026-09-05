@@ -13,7 +13,11 @@ import { Transform } from 'class-transformer';
 // class-validator solo se salta la validacion si el valor es null/undefined,
 // no si es "" — sin este Transform, un correo vacio caia en @IsEmail() y
 // tiraba el error tecnico "correo must be an email" en vez de simplemente
-// aceptarse como "no se dio correo". Mismo criterio aplicado en UpdateClienteDto.
+// aceptarse como "no se dio correo". Mismo criterio aplicado en UpdateClienteDto,
+// y también a cedula/pasaporte/rnc: los tres tienen un índice único parcial
+// ("WHERE columna IS NOT NULL") que NO excluye la cadena vacía, así que dos
+// clientes con cedula="" chocan como si fueran un duplicado real y el
+// guardado revienta con un 500 sin este Transform (hallazgo del 04/09/2026).
 const vacioComoIndefinido = ({ value }: { value: unknown }) =>
   value === '' ? undefined : value;
 import { TipoCliente, EstadoCivil, EstadoCliente } from '../../common/enums/index.js';
@@ -74,14 +78,17 @@ export class CreateClienteDto {
 
   // Identificación compartida
   @IsOptional()
+  @Transform(vacioComoIndefinido)
   @IsString()
   cedula?: string;
 
   @IsOptional()
+  @Transform(vacioComoIndefinido)
   @IsString()
   pasaporte?: string;
 
   @IsOptional()
+  @Transform(vacioComoIndefinido)
   @IsString()
   rnc?: string;
 
@@ -125,9 +132,9 @@ export class UpdateClienteDto {
   @IsOptional() @IsString() representanteLegal?: string;
   @IsOptional() @IsString() cedulaOPasaporteRepresentante?: string;
   @IsOptional() @IsString() actividadComercial?: string;
-  @IsOptional() @IsString() cedula?: string;
-  @IsOptional() @IsString() pasaporte?: string;
-  @IsOptional() @IsString() rnc?: string;
+  @IsOptional() @Transform(vacioComoIndefinido) @IsString() cedula?: string;
+  @IsOptional() @Transform(vacioComoIndefinido) @IsString() pasaporte?: string;
+  @IsOptional() @Transform(vacioComoIndefinido) @IsString() rnc?: string;
   @IsOptional() @IsString() nacionalidad?: string;
   @IsOptional() @IsString() direccion?: string;
   @IsOptional() @IsArray() telefonos?: string[];
