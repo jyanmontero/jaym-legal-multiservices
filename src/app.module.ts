@@ -5,6 +5,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ClientesModule } from './clientes/clientes.module.js';
 import { ExpedientesModule } from './expedientes/expedientes.module.js';
 import { HistorialModule } from './historial/historial.module.js';
+import { SeguimientoModule } from './seguimiento/seguimiento.module.js';
 import { UsuariosModule } from './usuarios/usuarios.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { DocumentosModule } from './documentos/documentos.module.js';
@@ -68,6 +69,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard.js';
     ClientesModule,
     ExpedientesModule,
     HistorialModule,
+    SeguimientoModule,
     DocumentosModule,
     RequisitosModule,
     AgendaModule,
