@@ -1,8 +1,10 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import { randomBytes, randomUUID } from 'crypto';
 import * as fs from 'fs/promises';
+import Anthropic from '@anthropic-ai/sdk';
 import { SolicitudDocumento } from './solicitud-documento.entity.js';
 import { Documento } from '../documentos/documento.entity.js';
 import { Cliente } from '../clientes/cliente.entity.js';
@@ -32,16 +34,27 @@ export class PlantillasService {
     @InjectRepository(Cliente)
     private readonly clienteRepo: Repository<Cliente>,
     private readonly pdfService: PlantillaPdfService,
+    private readonly config: ConfigService,
   ) {}
 
-  listarCatalogo() {
-    return CATALOGO_PLANTILLAS.map(({ clave, nombre, descripcion, precio, campos }) => ({
-      clave,
-      nombre,
-      descripcion,
-      precio,
-      campos,
-    }));
+  /**
+   * `soloPublico=true` filtra las plantillas marcadas
+   * `visibleEnCatalogoPublico: false` (instancias/escritos internos que no
+   * se venden al público) -- lo usa el catálogo público de autoservicio.
+   * La pantalla interna (PlantillasCatalogoController) sigue viendo todo.
+   */
+  listarCatalogo(soloPublico = false) {
+    return CATALOGO_PLANTILLAS.filter((p) => !soloPublico || p.visibleEnCatalogoPublico !== false).map(
+      ({ clave, nombre, descripcion, precio, campos, requiereVerificacionCitas, visibleEnCatalogoPublico }) => ({
+        clave,
+        nombre,
+        descripcion,
+        precio,
+        campos,
+        requiereVerificacionCitas,
+        visibleEnCatalogoPublico: visibleEnCatalogoPublico !== false,
+      }),
+    );
   }
 
   /** Datos de pago -- cuentas bancarias y contacto -- para mostrar al cliente. */
@@ -67,15 +80,25 @@ export class PlantillasService {
       if (!existe) throw new BadRequestException('El cliente indicado no existe');
     }
 
+    const datos = dto.datosPrellenados ?? {};
+    // Si quien crea la solicitud ya dejó todos los campos obligatorios
+    // llenos (típico de una instancia/escrito que redacta el propio
+    // despacho, sin que ningún cliente tenga que completar un formulario),
+    // se salta el paso de "esperar al cliente" y pasa directo a revisión
+    // interna -- pendiente_cliente solo tiene sentido cuando falta algo.
+    const completaDesdeElInicio = camposFaltantes(plantilla, datos).length === 0;
+
     const solicitud = this.solicitudRepo.create({
       plantillaClave: dto.plantillaClave,
       expedienteId: dto.expedienteId,
       clienteId: dto.clienteId,
-      datos: dto.datosPrellenados ?? {},
+      datos,
       notasInternas: dto.notasInternas,
       tokenAcceso: this.generarToken(),
       creadoPorId: usuarioId,
       precio: plantilla.precio.toFixed(2),
+      estado: completaDesdeElInicio ? EstadoSolicitudDocumento.PENDIENTE_APROBACION : EstadoSolicitudDocumento.PENDIENTE_CLIENTE,
+      completadoEn: completaDesdeElInicio ? new Date() : undefined,
     });
     const guardada = await this.solicitudRepo.save(solicitud);
     return { solicitud: guardada, enlacePublico: this.construirEnlacePublico(guardada.tokenAcceso) };
@@ -172,7 +195,16 @@ export class PlantillasService {
 
   async revisar(id: string, dto: RevisarSolicitudDocumentoDto, usuarioId: string): Promise<SolicitudDocumento> {
     const solicitud = await this.obtener(id);
-    if (solicitud.estado !== EstadoSolicitudDocumento.PENDIENTE_APROBACION) {
+    const plantillaPrevia = obtenerPlantilla(solicitud.plantillaClave);
+    // Una plantilla de uso interno (visibleEnCatalogoPublico=false, ej. una
+    // instancia) nunca pasa por el flujo de "el cliente la completa" -- el
+    // propio despacho la llena de principio a fin -- así que también se
+    // puede revisar/aprobar estando en pendiente_cliente, no solo en
+    // pendiente_aprobacion.
+    const puedeRevisarse =
+      solicitud.estado === EstadoSolicitudDocumento.PENDIENTE_APROBACION ||
+      (solicitud.estado === EstadoSolicitudDocumento.PENDIENTE_CLIENTE && plantillaPrevia?.visibleEnCatalogoPublico === false);
+    if (!puedeRevisarse) {
       throw new BadRequestException(
         'Solo se pueden revisar solicitudes que el cliente ya completó y están pendientes de aprobación.',
       );
@@ -182,6 +214,13 @@ export class PlantillasService {
 
     if (dto.datosCorregidos) {
       solicitud.datos = { ...solicitud.datos, ...dto.datosCorregidos };
+      // Cualquier corrección de texto invalida una verificación de citas
+      // ya hecha -- hay que confirmarla de nuevo sobre el texto final.
+      if (plantilla.requiereVerificacionCitas) {
+        solicitud.citasVerificadas = false;
+        solicitud.citasVerificadasPorId = undefined;
+        solicitud.citasVerificadasEn = undefined;
+      }
     }
 
     if (!dto.aprobar) {
@@ -203,9 +242,19 @@ export class PlantillasService {
         'No se puede aprobar: el pago de este documento aún no ha sido confirmado. Marca el pago como recibido primero.',
       );
     }
+    if (plantilla.requiereVerificacionCitas && !solicitud.citasVerificadas) {
+      throw new BadRequestException(
+        'No se puede aprobar: falta confirmar que se verificó que cada ley y jurisprudencia citada en este documento existe y es correcta. Usa "Confirmar citas verificadas" primero.',
+      );
+    }
 
     const cuerpo = renderizarCuerpo(plantilla, solicitud.datos);
-    const buffer = await this.pdfService.generarDocumentoPdf(plantilla.nombre, cuerpo);
+    const buffer = await this.pdfService.generarDocumentoPdf(
+      plantilla.nombre,
+      cuerpo,
+      plantilla.tamanoPagina,
+      plantilla.incluirEspacioNotarial !== false,
+    );
 
     const nombreArchivoDisco = `${randomUUID()}.pdf`;
     await fs.mkdir(CARPETA_ALMACENAMIENTO, { recursive: true });
@@ -256,5 +305,137 @@ export class PlantillasService {
     return cliente.tipo === TipoCliente.JURIDICO
       ? (cliente.razonSocial ?? cliente.nombreComercial ?? '')
       : `${cliente.nombres ?? ''} ${cliente.apellidos ?? ''}`.trim();
+  }
+
+  // --- Edición interna de campos (instancias/escritos) ------------------
+
+  /**
+   * Deja que el personal interno vaya llenando/corrigiendo los campos de
+   * una solicitud (ej. una instancia) antes de mandarla a revisión --
+   * distinto del flujo de "el cliente completa su formulario público" que
+   * usa completarPorToken. Solo mientras no esté ya aprobada o rechazada.
+   */
+  async actualizarDatos(id: string, datos: Record<string, string>, usuarioId: string): Promise<SolicitudDocumento> {
+    const solicitud = await this.obtener(id);
+    if (
+      solicitud.estado === EstadoSolicitudDocumento.APROBADO
+    ) {
+      throw new BadRequestException('Este documento ya fue aprobado y no se puede editar.');
+    }
+    const plantilla = obtenerPlantilla(solicitud.plantillaClave);
+    if (!plantilla) throw new NotFoundException('Plantilla no encontrada');
+
+    solicitud.datos = { ...solicitud.datos, ...datos };
+    // Igual que al corregir datos desde revisar(): cualquier edición
+    // invalida una verificación de citas ya hecha.
+    if (plantilla.requiereVerificacionCitas) {
+      solicitud.citasVerificadas = false;
+      solicitud.citasVerificadasPorId = undefined;
+      solicitud.citasVerificadasEn = undefined;
+    }
+    // Plantillas de uso interno (instancias): una vez completos todos los
+    // campos obligatorios, pasa a pendiente de aprobación -- no tiene
+    // sentido dejarla en "pendiente_cliente" cuando no hay ningún cliente
+    // llenando nada.
+    if (
+      plantilla.visibleEnCatalogoPublico === false &&
+      solicitud.estado === EstadoSolicitudDocumento.PENDIENTE_CLIENTE &&
+      camposFaltantes(plantilla, solicitud.datos).length === 0
+    ) {
+      solicitud.estado = EstadoSolicitudDocumento.PENDIENTE_APROBACION;
+      solicitud.completadoEn = new Date();
+    }
+    return this.solicitudRepo.save(solicitud);
+  }
+
+  /**
+   * Confirmación explícita de un humano de que verificó personalmente que
+   * cada ley y jurisprudencia citada en el documento existe y es correcta.
+   * Obligatoria (ver revisar()) antes de aprobar cualquier plantilla con
+   * requiereVerificacionCitas=true.
+   */
+  async confirmarCitasVerificadas(id: string, usuarioId: string): Promise<SolicitudDocumento> {
+    const solicitud = await this.obtener(id);
+    if (solicitud.estado === EstadoSolicitudDocumento.APROBADO) {
+      throw new BadRequestException('Este documento ya fue aprobado.');
+    }
+    solicitud.citasVerificadas = true;
+    solicitud.citasVerificadasPorId = usuarioId;
+    solicitud.citasVerificadasEn = new Date();
+    return this.solicitudRepo.save(solicitud);
+  }
+
+  // --- Redacción asistida (IA) -------------------------------------------
+
+  private clienteAnthropic(): Anthropic {
+    const apiKey = this.config.get<string>('ANTHROPIC_API_KEY');
+    if (!apiKey) {
+      throw new BadRequestException(
+        'La redacción asistida todavía no está activada: falta configurar la clave de Anthropic (ANTHROPIC_API_KEY) en el archivo .env del backend.',
+      );
+    }
+    return new Anthropic({ apiKey });
+  }
+
+  /**
+   * Genera un BORRADOR del fundamento de derecho (leyes y jurisprudencia
+   * aplicable), a partir de los hechos que el abogado ya escribió. Es una
+   * operación sin estado -- no necesita que la solicitud exista todavía,
+   * para poder usarse directo desde el formulario de creación -- y no
+   * guarda nada por sí sola: el abogado decide si pega el texto en el
+   * campo correspondiente antes de enviar el formulario.
+   *
+   * ADVERTENCIA que se traslada también al usuario final: un modelo de
+   * lenguaje puede inventar números de sentencia, resoluciones o artículos
+   * que no existen. Por eso esta plantilla exige verificación humana
+   * obligatoria (requiereVerificacionCitas) y nunca se debe tratar este
+   * texto como listo para depositar sin comprobar cada cita en su fuente
+   * original.
+   */
+  async generarFundamentoConIA(datos: { destinatario?: string; asunto?: string; hechos: string }): Promise<{ texto: string; advertencia: string }> {
+    const hechos = String(datos.hechos ?? '').trim();
+    if (!hechos) {
+      throw new BadRequestException('Escribe primero los hechos antes de pedir un borrador de fundamento de derecho.');
+    }
+
+    const anthropic = this.clienteAnthropic();
+    const mensaje = await anthropic.messages.create({
+      model: 'claude-sonnet-5',
+      max_tokens: 1500,
+      system:
+        'Eres un asistente que ayuda a un abogado dominicano a redactar el apartado "EN CUANTO AL DERECHO" de una instancia o escrito motivado, dirigido a un tribunal o institución de la República Dominicana. ' +
+        'Redacta en español jurídico dominicano, con tono formal. ' +
+        'Regla más importante: NUNCA inventes un número de sentencia, resolución, expediente o cita textual que no conozcas con certeza. ' +
+        'Si consideras que aplica una ley o jurisprudencia pero no estás seguro del número o fecha exacta, descríbela en términos generales (ej. "conforme a la jurisprudencia constante de la Suprema Corte de Justicia en materia de...") en vez de inventar un número. ' +
+        'Este texto es un BORRADOR que el abogado va a revisar y verificar antes de usarlo -- nunca afirmes que una cita ya fue verificada.',
+      messages: [
+        {
+          role: 'user',
+          content:
+            `Destinatario de la instancia: ${datos.destinatario || '(no indicado)'}
+` +
+            `Asunto: ${datos.asunto || '(no indicado)'}
+
+` +
+            `Hechos:
+${hechos}
+
+` +
+            'Redacta únicamente el apartado de fundamento de derecho (leyes y jurisprudencia aplicable) correspondiente a estos hechos, listo para insertarse en el escrito. No incluyas el encabezado "EN CUANTO AL DERECHO", ni los hechos, ni la petición -- solo el fundamento.',
+        },
+      ],
+    });
+
+    const texto = mensaje.content
+      .filter((bloque): bloque is Anthropic.TextBlock => bloque.type === 'text')
+      .map((bloque) => bloque.text)
+      .join('\n')
+      .trim();
+
+    return {
+      texto,
+      advertencia:
+        'Borrador generado por IA -- verifica personalmente cada ley, artículo y sentencia citada antes de usarlo. No se puede aprobar este documento sin confirmar esa verificación.',
+    };
   }
 }

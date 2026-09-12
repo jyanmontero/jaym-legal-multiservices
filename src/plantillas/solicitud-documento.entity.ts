@@ -93,6 +93,21 @@ export class SolicitudDocumento {
   @Column({ nullable: true })
   documentoGeneradoId?: string;
 
+  // Confirmación explícita de que un humano (no la IA) verificó que cada
+  // ley y jurisprudencia citada en el documento existe y es correcta.
+  // Obligatoria antes de aprobar cuando la plantilla tiene
+  // requiereVerificacionCitas=true (ver plantillas-catalogo.ts) -- sin
+  // importar si el texto lo escribió el abogado a mano o partió de un
+  // borrador generado por el asistente de IA.
+  @Column({ default: false })
+  citasVerificadas: boolean;
+
+  @Column({ nullable: true })
+  citasVerificadasPorId?: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  citasVerificadasEn?: Date;
+
   @Column({ nullable: true })
   revisadoPorId?: string;
 

@@ -58,7 +58,11 @@ export class CotizacionesController {
     return this.facturacionService.obtenerCotizacion(id);
   }
 
+  // Igual que ClientesController.crear: 200 en vez de 201 porque la
+  // respuesta puede traer `duplicados` en vez de la cotización creada
+  // cuando el cliente nuevo (clienteNuevo) coincide con uno existente.
   @Post()
+  @HttpCode(HttpStatus.OK)
   crear(@Body() dto: CreateCotizacionDto, @CurrentUser('sub') usuarioId: string) {
     return this.facturacionService.crearCotizacion(dto, usuarioId);
   }
@@ -71,6 +75,15 @@ export class CotizacionesController {
   @Post(':id/convertir-a-factura')
   convertir(@Param('id') id: string, @CurrentUser('sub') usuarioId: string) {
     return this.facturacionService.convertirCotizacionAFactura(id, usuarioId);
+  }
+
+  // Crea una copia de la cotización (nuevo número, estado "borrador") para
+  // reutilizar rápido una cotización parecida sin tener que rehacerla desde
+  // cero. Equivalente práctico de "Crear duplicado" de Brisk, pero solo
+  // para cotizaciones -- nunca para facturas (ver nota en FacturasController).
+  @Post(':id/duplicar')
+  duplicar(@Param('id') id: string, @CurrentUser('sub') usuarioId: string) {
+    return this.facturacionService.duplicarCotizacion(id, usuarioId);
   }
 
   // Elimina la cotizacion por completo -- pensada para corregir una que

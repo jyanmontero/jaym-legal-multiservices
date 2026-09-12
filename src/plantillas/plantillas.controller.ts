@@ -5,6 +5,8 @@ import { DocumentosService } from '../documentos/documentos.service.js';
 import { CrearSolicitudDocumentoDto } from './dto/crear-solicitud.dto.js';
 import { CompletarSolicitudDto } from './dto/completar-solicitud.dto.js';
 import { RevisarSolicitudDocumentoDto } from './dto/revisar-solicitud.dto.js';
+import { ActualizarDatosSolicitudDto } from './dto/actualizar-datos.dto.js';
+import { GenerarFundamentoDto } from './dto/generar-fundamento.dto.js';
 import { IniciarSolicitudPublicaDto } from './dto/iniciar-solicitud-publica.dto.js';
 import { ConfirmarPagoDto } from './dto/confirmar-pago.dto.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
@@ -45,7 +47,7 @@ export class SolicitudesDocumentoPublicoController {
   @Public()
   @Get('publico/catalogo')
   catalogoPublico() {
-    return this.plantillasService.listarCatalogo();
+    return this.plantillasService.listarCatalogo(true);
   }
 
   // Autoservicio: cualquiera elige una plantilla y arranca su propia
@@ -121,6 +123,33 @@ export class SolicitudesDocumentoController {
     @CurrentUser('sub') usuarioId: string,
   ) {
     return this.plantillasService.revisar(id, dto, usuarioId);
+  }
+
+  // Edición interna de campos (ej. instancias que el propio despacho va
+  // llenando por partes) -- distinto del formulario público del cliente.
+  @Patch(':id/datos')
+  actualizarDatos(
+    @Param('id') id: string,
+    @Body() dto: ActualizarDatosSolicitudDto,
+    @CurrentUser('sub') usuarioId: string,
+  ) {
+    return this.plantillasService.actualizarDatos(id, dto.datos, usuarioId);
+  }
+
+  // Confirmación humana obligatoria de que se verificaron las citas
+  // legales/jurisprudencia antes de poder aprobar (ver requiereVerificacionCitas).
+  @Patch(':id/confirmar-citas')
+  confirmarCitas(@Param('id') id: string, @CurrentUser('sub') usuarioId: string) {
+    return this.plantillasService.confirmarCitasVerificadas(id, usuarioId);
+  }
+
+  // Borrador de fundamento de derecho asistido por IA -- no depende de que
+  // exista una solicitud (sirve para usarlo directo en el formulario de
+  // creación); nunca se guarda solo, el abogado debe revisarlo y pegarlo
+  // él mismo en el campo correspondiente antes de enviar el formulario.
+  @Post('generar-fundamento-ia')
+  generarFundamentoIA(@Body() dto: GenerarFundamentoDto) {
+    return this.plantillasService.generarFundamentoConIA(dto);
   }
 
   @Get(':id/pdf')

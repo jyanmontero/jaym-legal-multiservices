@@ -31,6 +31,31 @@ export interface PlantillaDocumento {
   precio: number;
   campos: CampoPlantilla[];
   cuerpo: string;
+  // Tamaño de hoja del PDF final. Por defecto 'LETTER' (carta, 8.5x11").
+  // 'LEGAL' es la hoja oficio (8.5x14") -- se usa en documentos que
+  // tradicionalmente se otorgan en ese formato, como el poder especial.
+  tamanoPagina?: 'LETTER' | 'LEGAL';
+  // Cuando es true, la solicitud de este documento no se puede aprobar
+  // (ver PlantillasService.revisar) sin que un humano confirme
+  // explícitamente (SolicitudDocumento.citasVerificadas) que verificó que
+  // cada ley y jurisprudencia citada en el texto existe y es correcta --
+  // sin importar si el contenido lo escribió el abogado o partió de un
+  // borrador del asistente de IA (ver generarFundamentoConIA). Pensado
+  // para instancias/escritos motivados, donde una cita inventada tiene
+  // consecuencias reales ante un tribunal o institución.
+  requiereVerificacionCitas?: boolean;
+  // Por defecto toda plantilla aparece en el catálogo público de
+  // autoservicio (para venderla directo al cliente final). Las instancias
+  // y escritos no se venden al público -- las redacta el despacho como
+  // parte del trabajo de un expediente -- así que se marcan en false para
+  // que listarCatalogo() las excluya de /solicitudes-documento/publico/catalogo.
+  visibleEnCatalogoPublico?: boolean;
+  // Por defecto el PDF final agrega, después del cuerpo, un recuadro en
+  // blanco reservado para que un Notario Público legalice las firmas
+  // físicamente más tarde. Poner esto en false cuando el propio cuerpo de
+  // la plantilla YA incluye la certificación notarial redactada (con su
+  // propia línea de firma del notario) -- para no duplicar el espacio.
+  incluirEspacioNotarial?: boolean;
 }
 
 export const CATALOGO_PLANTILLAS: PlantillaDocumento[] = [
@@ -39,6 +64,7 @@ export const CATALOGO_PLANTILLAS: PlantillaDocumento[] = [
     nombre: 'Contrato de Compraventa de Bienes Muebles',
     descripcion: 'Venta de un bien mueble (vehículo, equipo, mobiliario, etc.) entre dos personas.',
     precio: 1200,
+    tamanoPagina: 'LEGAL',
     campos: [
       { clave: 'vendedorNombre', etiqueta: 'Nombre completo del vendedor', tipo: 'texto', requerido: true },
       { clave: 'vendedorCedula', etiqueta: 'Cédula o pasaporte del vendedor', tipo: 'texto', requerido: true },
@@ -133,6 +159,7 @@ EL ARRENDADOR                             EL ARRENDATARIO`,
     nombre: 'Poder Especial de Representación',
     descripcion: 'Autorización a una persona para representar a otra en una gestión específica.',
     precio: 800,
+    tamanoPagina: 'LEGAL',
     campos: [
       { clave: 'poderdanteNombre', etiqueta: 'Nombre completo de quien otorga el poder', tipo: 'texto', requerido: true },
       { clave: 'poderdanteCedula', etiqueta: 'Cédula o pasaporte del poderdante', tipo: 'texto', requerido: true },
@@ -270,6 +297,190 @@ Hecho y firmado de buena fe, en dos (2) originales de un mismo tenor y efecto, u
 _______________________________          _______________________________
 {{primeraParteNombre}}                    {{segundaParteNombre}}
 PRIMERA PARTE                             SEGUNDA PARTE`,
+  },
+
+  {
+    clave: 'instancia_motivada',
+    nombre: 'Instancia / Escrito Motivado',
+    descripcion:
+      'Escrito dirigido a un tribunal o institución (JCE, DGII, Procuraduría, etc.) que expone hechos, fundamento de derecho y una petición concreta. El destinatario es libre, así que sirve tanto para un tribunal específico como para una institución pública -- cambiarlo es solo cambiar este campo.',
+    precio: 0,
+    // No se vende al público -- la redacta el despacho como parte del
+    // trabajo de un expediente.
+    visibleEnCatalogoPublico: false,
+    // El fundamento de derecho puede partir de un borrador del asistente
+    // de IA (ver PlantillasController.generarFundamentoConIA) -- por eso
+    // esta plantilla exige la confirmación humana de las citas antes de
+    // poder aprobarse.
+    requiereVerificacionCitas: true,
+    tamanoPagina: 'LEGAL',
+    campos: [
+      {
+        clave: 'destinatario',
+        etiqueta: 'Autoridad o tribunal al que se dirige',
+        tipo: 'texto',
+        requerido: true,
+        ayuda: 'Ej. HONORABLE JUNTA CENTRAL ELECTORAL, DIRECCIÓN GENERAL DE IMPUESTOS INTERNOS (DGII), PROCURADURÍA GENERAL DE LA REPÚBLICA, o el tribunal correspondiente (ej. HONORABLE JUEZ PRESIDENTE DE LA CÁMARA CIVIL Y COMERCIAL DEL JUZGADO DE PRIMERA INSTANCIA DEL DISTRITO NACIONAL)',
+      },
+      { clave: 'solicitanteNombre', etiqueta: 'Nombre completo de quien suscribe la instancia', tipo: 'texto', requerido: true },
+      { clave: 'solicitanteCedula', etiqueta: 'Cédula, pasaporte o RNC de quien suscribe', tipo: 'texto', requerido: true },
+      {
+        clave: 'calidadSolicitante',
+        etiqueta: 'Calidad en la que actúa',
+        tipo: 'texto',
+        requerido: true,
+        ayuda: 'Ej. actuando en su propio nombre y representación, o en calidad de abogado apoderado especial de...',
+      },
+      { clave: 'asunto', etiqueta: 'Asunto (resumen de una línea)', tipo: 'texto', requerido: true },
+      {
+        clave: 'hechos',
+        etiqueta: 'Hechos',
+        tipo: 'textarea',
+        requerido: true,
+        ayuda: 'Los hechos relevantes del caso, en orden, tal como deben quedar expuestos ante el destinatario',
+      },
+      {
+        clave: 'fundamentoDerecho',
+        etiqueta: 'Fundamento de derecho (leyes y jurisprudencia aplicable)',
+        tipo: 'textarea',
+        requerido: true,
+        ayuda: 'Puede partir de un borrador generado por el asistente de IA -- SIEMPRE debe verificarse cada cita legal antes de aprobar este documento.',
+      },
+      {
+        clave: 'peticion',
+        etiqueta: 'Petición (lo que se solicita concretamente)',
+        tipo: 'textarea',
+        requerido: true,
+      },
+      { clave: 'lugarFirma', etiqueta: 'Lugar', tipo: 'texto', requerido: true },
+      { clave: 'fecha', etiqueta: 'Fecha', tipo: 'fecha', requerido: true },
+    ],
+    cuerpo: `{{destinatario}}
+
+ASUNTO: {{asunto}}
+
+Yo, {{solicitanteNombre}}, portador(a) de la cédula de identidad y electoral / pasaporte / RNC No. {{solicitanteCedula}}, {{calidadSolicitante}}, ante Ud. respetuosamente EXPONGO:
+
+EN CUANTO A LOS HECHOS:
+
+{{hechos}}
+
+EN CUANTO AL DERECHO:
+
+{{fundamentoDerecho}}
+
+POR TODO LO CUAL, muy respetuosamente solicito:
+
+{{peticion}}
+
+Es justicia que se os pide y espero merecer, en {{lugarFirma}}, el día {{fecha}}.
+
+
+_______________________________
+{{solicitanteNombre}}`,
+  },
+
+  {
+    clave: 'poder_especial_jaym',
+    nombre: 'Poder Especial a Favor de JAYM Legal Multiservices',
+    descripcion:
+      'Poder que uno o más poderdantes otorgan a JAYM Legal Multiservices (representada por el Lic. Joseph Alcides Yan Montero) para gestionar un asunto específico. La certificación notarial de las firmas va redactada dentro del mismo documento, así que el notario que certifica puede cambiarse en cada caso.',
+    precio: 0,
+    // Uso interno -- lo redacta el despacho para un caso propio, no un
+    // producto que se le venda a cualquier visitante del catálogo público.
+    visibleEnCatalogoPublico: false,
+    tamanoPagina: 'LEGAL',
+    // La certificación notarial ya queda escrita (con su propia línea de
+    // firma del notario) dentro de cuerpo -- no hace falta el recuadro en
+    // blanco genérico que se agrega a las demás plantillas.
+    incluirEspacioNotarial: false,
+    campos: [
+      {
+        clave: 'descripcionPoderdantes',
+        etiqueta: 'Datos de quien(es) otorga(n) el poder (poderdante(s))',
+        tipo: 'textarea',
+        requerido: true,
+        ayuda:
+          'Uno o varios, tal como deben describirse en el acto. Ej.: la señora DANILDA HERRERA SERRANO, dominicana, mayor de edad, viuda, portadora de la Cédula de Identidad y Electoral No. 402-2480231-0, domiciliada y residente en la calle Segunda, esquina Veinticuatro (24) de Abril, Ensanche Almeida, municipio de La Romana, República Dominicana; y el señor PEDRO JULIO COLON, norteamericano, mayor de edad, titular del Pasaporte de los Estados Unidos de América No. 515279071, domiciliado y residente en los Estados Unidos de América',
+      },
+      {
+        clave: 'autoridadesEspecificas',
+        etiqueta: 'Autoridades o instituciones específicas ante las que se gestiona',
+        tipo: 'textarea',
+        requerido: true,
+        ayuda:
+          'Ej.: el Registro de Títulos de San Pedro de Macorís y cualquier otra dependencia de la Jurisdicción Inmobiliaria, la Dirección General de Impuestos Internos (DGII), la Junta Central Electoral (JCE), tribunales de la República',
+      },
+      {
+        clave: 'facultadesEspecificas',
+        etiqueta: 'Facultades específicas que se otorgan (lista)',
+        tipo: 'textarea',
+        requerido: true,
+        ayuda:
+          'Ej.: (a) gestionar la inclusión e incorporación del cincuenta por ciento (50%) del inmueble identificado como Parcela No. ...; (b) solicitar y dar seguimiento a la expedición del nuevo Certificado de Título correspondiente; (c) depositar, retirar, firmar y recibir instancias, documentos, notificaciones y correspondencias; (d) realizar pagos de impuestos, aranceles y servicios registrales; y (e) realizar cualquier otra acción o gestión que sea requerida para obtener resultados definitivos en los procesos que se le encomienden.',
+      },
+      {
+        clave: 'bloqueFirmasPoderdantes',
+        etiqueta: 'Bloque de firmas de el/los poderdante(s)',
+        tipo: 'textarea',
+        requerido: true,
+        ayuda:
+          'Escribe las líneas de firma tal como deben quedar en el documento, una debajo de otra o en columnas. Ej.:\n_______________________________          _______________________________\nDANILDA HERRERA SERRANO                   PEDRO JULIO COLON\n        Poderdante                                Poderdante',
+      },
+      {
+        clave: 'nombresPoderdantesCertificacion',
+        etiqueta: 'Nombres del/los poderdante(s) para la frase de certificación notarial',
+        tipo: 'textarea',
+        requerido: true,
+        ayuda:
+          'Ej.: la señora poderdante DANILDA HERRERA SERRANO, el señor poderdante PEDRO JULIO COLON',
+      },
+      { clave: 'lugarFirma', etiqueta: 'Ciudad donde se firma y certifica', tipo: 'texto', requerido: true, ayuda: 'Ej. La Romana' },
+      {
+        clave: 'fecha',
+        etiqueta: 'Fecha del acto, en letras',
+        tipo: 'texto',
+        requerido: true,
+        ayuda: 'Ej.: a los cuatro (4) días del mes de septiembre del año dos mil veintiséis (2026)',
+      },
+      {
+        clave: 'notarioNombre',
+        etiqueta: 'Nombre completo del Notario Público que certifica',
+        tipo: 'texto',
+        requerido: true,
+        ayuda: 'Ej. DOCTOR EUGENIO MARIANO -- cambia libremente según quién vaya a certificar este acto',
+      },
+      {
+        clave: 'notarioDatos',
+        etiqueta: 'Generales del notario (todo lo que sigue después de su nombre)',
+        tipo: 'textarea',
+        requerido: true,
+        ayuda:
+          'Ej.: dominicano, mayor de edad, soltero, portador de la cédula de identidad y electoral No. 026-0036871-2, Abogado Notario Público de los del número para este Municipio de La Romana, República Dominicana, domiciliado y residente en la Manzana C, edificio Sto. No. 2B Proyecto Los Maestros, carretera Villa Hermosa, San Pedro de Macorís, Municipio Villa Hermosa, La Romana, portador de la matrícula de Notario No. 5831, con mi estudio profesional abierto en la calle Francisco Richies ducudray No. 16, Esquina Calle Altagracia, La Romana, República Dominicana',
+      },
+    ],
+    cuerpo: `Quienes suscriben, {{descripcionPoderdantes}}, quienes en el presente documento se denominan LOS PODERDANTES, por medio del presente acto, OTORGAN FORMAL AUTORIZACIÓN LEGAL Y PODER ESPECIAL, tan amplio y suficiente como en derecho fuere necesario, a favor de la entidad JAYM LEGAL MULTISERVICES SRL, sociedad legalmente constituida bajo el RNC No. 133540772, debidamente representada por su presidente, el Licenciado JOSEPH ALCIDES YAN MONTERO, dominicano, mayor de edad, abogado de los tribunales de la República, titular de la Cédula de Identidad y Electoral No. 026-0127311-9, domiciliado y residente en la calle Emma Balaguer, con José Dolores No. 08, Municipio Villa Hermosa, La Romana, República Dominicana, Tel. 849-464-4313, Correo Electrónico info@jaymlegalmultiservices.com, página web www.jaymlegalmultiservices.com, quien en lo adelante se denominará EL APODERADO; PARA QUE EN NOMBRE Y REPRESENTACIÓN DE LOS PODERDANTES, y como si se tratara de sus propias personas, pueda realizar todas las gestiones necesarias ante las autoridades competentes, incluyendo de manera especial, mas no limitativa, ante {{autoridadesEspecificas}}, y cualquier otro organismo público o privado, para:
+
+{{facultadesEspecificas}}
+
+Este poder deja sin efecto cualquier otro acto realizado con el mismo objeto, quedando revocado de pleno derecho al llegar a su término. EL APODERADO manifiesta su aceptación del presente mandato.
+
+Este acto fue redactado, leído en alta voz y firmado en la ciudad de {{lugarFirma}}, República Dominicana, {{fecha}}.
+
+
+{{bloqueFirmasPoderdantes}}
+
+
+_______________________________
+JOSEPH ALCIDES YAN MONTERO
+Apoderado
+
+YO, {{notarioNombre}}, {{notarioDatos}}; CERTIFICO Y DOY FE: Que las firmas que aparecen al pie de este documento fueron puestas en mi presencia por {{nombresPoderdantesCertificacion}}, y el Lic. JOSEPH ALCIDES YAN MONTERO, apoderado, de generales que constan en este documento, quienes me declararon libre y voluntariamente, bajo la fe del juramento, que estas son las mismas firmas que acostumbran a utilizar en todos sus documentos, tanto públicos como privados, a las cuales se les debe dar entero crédito y fe. En la ciudad, municipio y provincia de {{lugarFirma}}, República Dominicana, {{fecha}}.
+
+
+_______________________________
+{{notarioNombre}}
+NOTARIO PÚBLICO`,
   },
 ];
 

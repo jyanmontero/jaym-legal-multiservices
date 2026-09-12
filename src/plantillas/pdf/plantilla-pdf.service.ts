@@ -39,9 +39,14 @@ export class PlantillaPdfService {
    * mismo bloque de texto como saltos de línea reales, así que no hace
    * falta partir el cuerpo en párrafos separados.
    */
-  async generarDocumentoPdf(titulo: string, cuerpo: string): Promise<Buffer> {
+  async generarDocumentoPdf(
+    titulo: string,
+    cuerpo: string,
+    tamanoPagina: 'LETTER' | 'LEGAL' = 'LETTER',
+    incluirEspacioNotarial = true,
+  ): Promise<Buffer> {
     const docDefinition: any = {
-      pageSize: 'LETTER',
+      pageSize: tamanoPagina,
       pageMargins: [MARGEN, 92, MARGEN, 60],
       defaultStyle: { font: 'Helvetica', fontSize: 10.5, lineHeight: 1.35 },
 
@@ -118,8 +123,12 @@ export class PlantillaPdfService {
         // coletilla de legalización de firmas (certificación, sello y
         // firma). Se deja en blanco a propósito -- no es texto del
         // contrato. `unbreakable` evita que el recuadro quede partido
-        // entre dos páginas.
-        {
+        // entre dos páginas. Se omite cuando la propia plantilla ya
+        // redactó la certificación notarial completa dentro del cuerpo
+        // (incluirEspacioNotarial=false) -- ver poder_especial_jaym.
+        ...(!incluirEspacioNotarial
+          ? []
+          : [{
           unbreakable: true,
           margin: [0, 26, 0, 0],
           stack: [
@@ -152,7 +161,7 @@ export class PlantillaPdfService {
               ],
             },
           ],
-        },
+        }]),
       ],
     };
 

@@ -13,9 +13,14 @@ import {
   FacturacionController,
 } from './facturacion.controller.js';
 import { HistorialCambiosModule } from '../historial-cambios/historial-cambios.module.js';
+import { ClientesModule } from '../clientes/clientes.module.js';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Cotizacion, Factura, Pago, Cliente, Expediente]), HistorialCambiosModule],
+  imports: [
+    TypeOrmModule.forFeature([Cotizacion, Factura, Pago, Cliente, Expediente]),
+    HistorialCambiosModule,
+    ClientesModule,
+  ],
   controllers: [CotizacionesController, FacturasController, FacturacionController],
   providers: [FacturacionService, PdfService],
   exports: [FacturacionService],

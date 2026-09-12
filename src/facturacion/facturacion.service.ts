@@ -10,6 +10,7 @@ import { Factura } from './factura.entity.js';
 import { Pago } from './pago.entity.js';
 import { Cliente } from '../clientes/cliente.entity.js';
 import { Expediente } from '../expedientes/expediente.entity.js';
+import { ClientesService, type PosibleDuplicado } from '../clientes/clientes.service.js';
 import { CreateCotizacionDto } from './dto/cotizacion.dto.js';
 import { CreateFacturaDto, UpdateFacturaDto } from './dto/factura.dto.js';
 import { CreatePagoDto } from './dto/pago.dto.js';
@@ -45,6 +46,7 @@ export class FacturacionService {
     @InjectDataSource()
     private readonly dataSource: DataSource,
     private readonly historialCambiosService: HistorialCambiosService,
+    private readonly clientesService: ClientesService,
   ) {}
 
   // --- Numeración ---------------------------------------------------------
@@ -72,14 +74,45 @@ export class FacturacionService {
 
   // --- Cotizaciones --------------------------------------------------------
 
-  async crearCotizacion(dto: CreateCotizacionDto, usuarioId: string): Promise<Cotizacion> {
+  /**
+   * Si `dto.clienteId` no viene, se espera `dto.clienteNuevo` -- se crea el
+   * cliente primero (con la misma detección de duplicados que
+   * ClientesController.crear) y, si todo bien, se usa su id para la
+   * cotización. Si ClientesService detecta un posible duplicado, no se crea
+   * nada (ni cliente ni cotización) y se devuelve `duplicados` para que la
+   * interfaz le pregunte al usuario, igual que en el formulario de clientes.
+   */
+  async crearCotizacion(
+    dto: CreateCotizacionDto,
+    usuarioId: string,
+  ): Promise<Cotizacion | { duplicados: PosibleDuplicado[] }> {
+    const { clienteNuevo, forzarClienteDuplicado, ...datosCotizacion } = dto;
+    let clienteId = datosCotizacion.clienteId;
+
+    if (!clienteId) {
+      if (!clienteNuevo) {
+        throw new BadRequestException(
+          'Debe indicar un cliente existente (clienteId) o los datos de un cliente nuevo (clienteNuevo).',
+        );
+      }
+      const resultado = await this.clientesService.crear(clienteNuevo, {
+        forzarPeseADuplicado: forzarClienteDuplicado,
+        usuarioId,
+      });
+      if (resultado.duplicados) {
+        return { duplicados: resultado.duplicados };
+      }
+      clienteId = resultado.cliente!.id;
+    }
+
     const aplicaItbisGeneral = dto.aplicaItbis ?? true;
     const totales = calcularTotales(dto.items, aplicaItbisGeneral, dto.descuento);
     const costoEnvio = dto.costoEnvio ?? 0;
     const numero = await this.generarNumero('COT', this.cotizacionRepo);
 
     const cotizacion = this.cotizacionRepo.create({
-      ...dto,
+      ...datosCotizacion,
+      clienteId,
       numero,
       subtotal: totales.subtotal,
       descuento: totales.descuento,
@@ -188,6 +221,43 @@ export class FacturacionService {
   async eliminarCotizacion(id: string): Promise<void> {
     await this.obtenerCotizacion(id); // 404 si no existe
     await this.cotizacionRepo.delete(id);
+  }
+
+  /**
+   * Duplica una cotización existente: crea una nueva con el mismo cliente,
+   * expediente, items y condiciones, pero número nuevo, estado "borrador"
+   * (sin importar el estado del original) y sin fecha de vigencia (para que
+   * el usuario la revise/ajuste antes de enviarla). Pensada como el
+   * equivalente práctico de "Crear duplicado" de Brisk, respetando la regla
+   * de que las facturas no se crean sueltas -- aquí solo se duplica la
+   * cotización, nunca una factura.
+   */
+  async duplicarCotizacion(id: string, usuarioId: string): Promise<Cotizacion> {
+    const original = await this.obtenerCotizacion(id);
+    const numero = await this.generarNumero('COT', this.cotizacionRepo);
+
+    const duplicado = this.cotizacionRepo.create({
+      clienteId: original.clienteId,
+      expedienteId: original.expedienteId,
+      concepto: original.concepto,
+      items: original.items,
+      aplicaItbis: original.aplicaItbis,
+      subtotal: original.subtotal,
+      descuento: original.descuento,
+      itbis: original.itbis,
+      total: original.total,
+      numero,
+      estado: EstadoCotizacion.BORRADOR,
+      notas: original.notas,
+      condicionesPago: original.condicionesPago,
+      numeroOrdenCompra: original.numeroOrdenCompra,
+      vendedor: original.vendedor,
+      direccionFacturacion: original.direccionFacturacion,
+      direccionEnvio: original.direccionEnvio,
+      costoEnvio: original.costoEnvio,
+      creadoPorId: usuarioId,
+    });
+    return this.cotizacionRepo.save(duplicado);
   }
 
   // --- Facturas --------------------------------------------------------
