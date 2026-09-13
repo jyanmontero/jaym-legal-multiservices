@@ -15,11 +15,10 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { randomUUID } from 'crypto';
+import { memoryStorage } from 'multer';
 import { extname } from 'path';
 import type { Response } from 'express';
-import { DocumentosService, CARPETA_ALMACENAMIENTO } from './documentos.service.js';
+import { DocumentosService } from './documentos.service.js';
 import { SubirDocumentoDto, NuevaVersionDocumentoDto } from './dto/subir-documento.dto.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import type { JwtPayloadUsuario } from '../auth/decorators/current-user.decorator.js';
@@ -69,13 +68,11 @@ const TIPOS_MIME_PERMITIDOS = new Set([
   'application/octet-stream', // fallback común de algunos navegadores/OS para .heic, .zip, etc.
 ]);
 
+// memoryStorage (no diskStorage): el archivo llega como buffer en memoria y
+// DocumentosService decide a dónde va (Cloudflare R2 en producción, disco
+// local en desarrollo) -- ver AlmacenamientoService.
 const opcionesMulter = {
-  storage: diskStorage({
-    destination: CARPETA_ALMACENAMIENTO,
-    filename: (_req, file, cb) => {
-      cb(null, `${randomUUID()}${extname(file.originalname)}`);
-    },
-  }),
+  storage: memoryStorage(),
   limits: { fileSize: TAMANO_MAXIMO_BYTES },
   fileFilter: (_req: unknown, file: Express.Multer.File, cb: (error: Error | null, acceptFile: boolean) => void) => {
     const extension = extname(file.originalname).toLowerCase();
@@ -170,7 +167,14 @@ export class DocumentosController {
     const usuarioActual = { id: usuario.sub, rol: usuario.rol as RolUsuario };
     await this.documentosService.verificarVisibilidadDocumento(documento, usuarioActual);
     await this.documentosService.verificarAcceso(documento, usuarioActual.rol, 'descargar');
-    const ruta = await this.documentosService.rutaFisica(documento);
+
+    // En producción (R2): redirige a una URL firmada temporal, así el
+    // archivo viaja directo desde Cloudflare al navegador sin pasar por
+    // este servidor. En desarrollo (disco local): lo sirve directamente.
+    const url = await this.documentosService.urlDescarga(documento);
+    if (url) return res.redirect(302, url);
+
+    const ruta = this.documentosService.rutaFisica(documento);
     return res.download(ruta, documento.nombreArchivo);
   }
 

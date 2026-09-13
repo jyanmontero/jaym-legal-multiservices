@@ -3,12 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import { randomBytes, randomUUID } from 'crypto';
-import * as fs from 'fs/promises';
 import Anthropic from '@anthropic-ai/sdk';
 import { SolicitudDocumento } from './solicitud-documento.entity.js';
 import { Documento } from '../documentos/documento.entity.js';
 import { Cliente } from '../clientes/cliente.entity.js';
-import { CARPETA_ALMACENAMIENTO } from '../documentos/documentos.service.js';
+import { AlmacenamientoService } from '../documentos/almacenamiento.service.js';
 import { CrearSolicitudDocumentoDto } from './dto/crear-solicitud.dto.js';
 import { CompletarSolicitudDto } from './dto/completar-solicitud.dto.js';
 import { RevisarSolicitudDocumentoDto } from './dto/revisar-solicitud.dto.js';
@@ -35,6 +34,7 @@ export class PlantillasService {
     private readonly clienteRepo: Repository<Cliente>,
     private readonly pdfService: PlantillaPdfService,
     private readonly config: ConfigService,
+    private readonly almacenamientoService: AlmacenamientoService,
   ) {}
 
   /**
@@ -257,8 +257,7 @@ export class PlantillasService {
     );
 
     const nombreArchivoDisco = `${randomUUID()}.pdf`;
-    await fs.mkdir(CARPETA_ALMACENAMIENTO, { recursive: true });
-    await fs.writeFile(`${CARPETA_ALMACENAMIENTO}/${nombreArchivoDisco}`, buffer);
+    await this.almacenamientoService.subir(nombreArchivoDisco, buffer, 'application/pdf');
 
     const nombreCliente = await this.nombreClienteParaArchivo(solicitud.clienteId);
     const documento = this.documentoRepo.create({

@@ -160,7 +160,14 @@ export class SolicitudesDocumentoController {
       return;
     }
     const documento = await this.documentosService.obtenerPorId(solicitud.documentoGeneradoId);
-    const ruta = await this.documentosService.rutaFisica(documento);
+
+    const url = await this.documentosService.urlDescarga(documento);
+    if (url) {
+      res.redirect(302, url);
+      return;
+    }
+
+    const ruta = this.documentosService.rutaFisica(documento);
     res.download(ruta, documento.nombreArchivo);
   }
 }

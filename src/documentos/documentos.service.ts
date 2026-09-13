@@ -6,10 +6,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import { randomUUID } from 'crypto';
+import { extname } from 'path';
 import { Documento } from './documento.entity.js';
 import { DocumentoPermiso } from './documento-permiso.entity.js';
+import { AlmacenamientoService } from './almacenamiento.service.js';
 import { SubirDocumentoDto } from './dto/subir-documento.dto.js';
 import {
   RolUsuario,
@@ -19,7 +20,7 @@ import {
 import { ExpedientesService, type UsuarioActual } from '../expedientes/expedientes.service.js';
 import { parsearPaginacion, type ResultadoPaginado } from '../common/paginacion/paginacion.js';
 
-export const CARPETA_ALMACENAMIENTO = path.resolve(process.cwd(), 'storage', 'documentos');
+export { CARPETA_ALMACENAMIENTO } from './almacenamiento.service.js';
 
 @Injectable()
 export class DocumentosService {
@@ -29,6 +30,7 @@ export class DocumentosService {
     @InjectRepository(DocumentoPermiso)
     private readonly permisoRepo: Repository<DocumentoPermiso>,
     private readonly expedientesService: ExpedientesService,
+    private readonly almacenamientoService: AlmacenamientoService,
   ) {}
 
   async subir(
@@ -38,10 +40,13 @@ export class DocumentosService {
   ): Promise<Documento> {
     if (!archivo) throw new BadRequestException('No se recibió ningún archivo');
 
+    const clave = `${randomUUID()}${extname(archivo.originalname)}`;
+    await this.almacenamientoService.subir(clave, archivo.buffer, archivo.mimetype);
+
     const documento = this.documentoRepo.create({
       ...dto,
       nombreArchivo: archivo.originalname,
-      rutaAlmacenamiento: archivo.filename,
+      rutaAlmacenamiento: clave,
       tipoMime: archivo.mimetype,
       tamanoBytes: archivo.size,
       version: 1,
@@ -66,6 +71,9 @@ export class DocumentosService {
 
     if (!archivo) throw new BadRequestException('No se recibió ningún archivo');
 
+    const clave = `${randomUUID()}${extname(archivo.originalname)}`;
+    await this.almacenamientoService.subir(clave, archivo.buffer, archivo.mimetype);
+
     const nuevaVersion = this.documentoRepo.create({
       expedienteId: anterior.expedienteId,
       clienteId: anterior.clienteId,
@@ -73,7 +81,7 @@ export class DocumentosService {
       categoria: anterior.categoria,
       descripcion: dto.descripcion ?? anterior.descripcion,
       nombreArchivo: archivo.originalname,
-      rutaAlmacenamiento: archivo.filename,
+      rutaAlmacenamiento: clave,
       tipoMime: archivo.mimetype,
       tamanoBytes: archivo.size,
       version: anterior.version + 1,
@@ -225,8 +233,17 @@ export class DocumentosService {
     }
   }
 
-  async rutaFisica(documento: Documento): Promise<string> {
-    return path.join(CARPETA_ALMACENAMIENTO, documento.rutaAlmacenamiento);
+  /**
+   * URL firmada temporal para descargar directamente desde R2, o null si se
+   * está usando el disco local (en ese caso el controller usa rutaFisica()).
+   */
+  async urlDescarga(documento: Documento): Promise<string | null> {
+    return this.almacenamientoService.urlDescarga(documento.rutaAlmacenamiento, documento.nombreArchivo);
+  }
+
+  /** Solo válido cuando no se está usando R2 (ver AlmacenamientoService). */
+  rutaFisica(documento: Documento): string {
+    return this.almacenamientoService.rutaLocal(documento.rutaAlmacenamiento);
   }
 
   /** Papelera recuperable — nunca borra el archivo ni la fila (sección 12). */
@@ -261,8 +278,7 @@ export class DocumentosService {
     if (!documento.eliminadoEn) {
       throw new BadRequestException('Solo se puede purgar un documento que ya esté en la papelera');
     }
-    const ruta = await this.rutaFisica(documento);
-    await fs.unlink(ruta).catch(() => undefined); // tolerante si el archivo ya no existe
+    await this.almacenamientoService.eliminar(documento.rutaAlmacenamiento);
     await this.documentoRepo.remove(documento);
   }
 }

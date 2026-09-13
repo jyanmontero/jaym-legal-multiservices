@@ -71,14 +71,15 @@ Conviene configurarla desde el principio si 2FA se va a ofrecer alguna vez.
 
 ## El almacenamiento de documentos
 
-Los documentos subidos (`storage/documentos/`) se guardan en disco, no en
-la base de datos. Esto es importante en producción: si el servidor se
-recrea (redeploy, reinicio de contenedor), esa carpeta debe persistir --
-con Docker, como un volumen (ya está resuelto en `docker-compose.yml`); en
-una plataforma sin volúmenes persistentes (la mayoría de los "serverless"),
-hay que migrar el almacenamiento a algo externo (S3 o similar) antes de
-lanzar -- no está hecho todavía, y es la única pieza de este punto #03 que
-de verdad depende de qué proveedor se elija.
+**Resuelto (13 de septiembre de 2026):** los documentos se guardan en
+Cloudflare R2 (compatible con la API de Amazon S3) cuando las variables
+`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` y
+`R2_BUCKET_NAME` están configuradas -- ver `AlmacenamientoService` en
+`src/documentos/almacenamiento.service.ts`. Si esas variables no están
+configuradas, cae de vuelta al disco local (`storage/documentos/`), que
+sigue siendo correcto para desarrollo pero NO para producción en Render
+(no garantiza disco persistente entre despliegues). En producción, las 4
+variables de R2 ya están configuradas en el servicio de Render.
 
 ## Recomendación para este despacho
 
@@ -100,14 +101,6 @@ personal de IT dedicado:
   Postgres en el propio Render — separa el ciclo de vida de la base de
   datos del backend, así que un redeploy del backend nunca arriesga la base
   de datos.
-- El único punto pendiente antes de lanzar con esta combinación: mover
-  `storage/documentos/` a S3 (o el almacenamiento de objetos de Render),
-  porque los "Web Services" de Render no garantizan disco persistente entre
-  despliegues. Si se prefiere evitar ese paso por ahora, la alternativa es
-  un VPS propio con `docker-compose.yml` tal cual está aquí (Postgres +
-  backend + volumen persistente) -- más barato y con el almacenamiento
-  local ya resuelto, a cambio de tener que mantener el servidor uno mismo.
-
-Si se quiere, el siguiente paso concreto sería armar esa migración del
-almacenamiento a S3 (o decidir ir por el VPS) -- decisión que conviene
-tomar antes de apuntar el dominio real, no después.
+- El almacenamiento de documentos ya se resolvió con Cloudflare R2 (ver
+  sección anterior) -- no queda pendiente ningún punto de esta lista antes
+  de operar con clientes reales por este lado.

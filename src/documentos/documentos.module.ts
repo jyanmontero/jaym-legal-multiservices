@@ -4,6 +4,7 @@ import { Documento } from './documento.entity.js';
 import { DocumentoPermiso } from './documento-permiso.entity.js';
 import { DocumentosService } from './documentos.service.js';
 import { DocumentosController } from './documentos.controller.js';
+import { AlmacenamientoService } from './almacenamiento.service.js';
 import { ExpedientesModule } from '../expedientes/expedientes.module.js';
 
 @Module({
@@ -12,7 +13,7 @@ import { ExpedientesModule } from '../expedientes/expedientes.module.js';
   // al que pertenece (hallazgo de la auditoría de resistencia y seguridad).
   imports: [TypeOrmModule.forFeature([Documento, DocumentoPermiso]), ExpedientesModule],
   controllers: [DocumentosController],
-  providers: [DocumentosService],
-  exports: [DocumentosService],
+  providers: [DocumentosService, AlmacenamientoService],
+  exports: [DocumentosService, AlmacenamientoService],
 })
 export class DocumentosModule {}
