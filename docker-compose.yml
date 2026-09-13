@@ -1,0 +1,68 @@
+# Referencia para correr JAYM LEGAL (backend + base de datos) con Docker en
+# cualquier servidor propio (un VPS, por ejemplo) o para probar localmente
+# el build de producción sin instalar Postgres a mano. No es obligatorio
+# usar este archivo -- también se puede usar la imagen del Dockerfile con un
+# Postgres administrado (Neon, Supabase, Render, RDS, etc.), en cuyo caso
+# solo hace falta el servicio "backend" de aquí abajo, apuntando su
+# DATABASE_URL al proveedor externo.
+#
+# Uso:
+#   1. Copiar .env.example a .env y completar los valores.
+#   2. docker compose up -d --build
+#   3. El API queda disponible en http://localhost:3000
+#
+# Las migraciones se aplican solas al arrancar (NODE_ENV=production activa
+# migrationsRun en app.module.ts) -- no hace falta un paso aparte.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: jaym
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Definir POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: jaym_legal
+    volumes:
+      - jaym_postgres_datos:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jaym -d jaym_legal"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://jaym:${POSTGRES_PASSWORD}@postgres:5432/jaym_legal
+      JWT_SECRET: ${JWT_SECRET:?Definir JWT_SECRET en .env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      HUBSPOT_ACCESS_TOKEN: ${HUBSPOT_ACCESS_TOKEN:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REFRESH_TOKEN: ${GOOGLE_REFRESH_TOKEN:-}
+      GOOGLE_CALENDAR_ID: ${GOOGLE_CALENDAR_ID:-primary}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURE: ${SMTP_SECURE:-true}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      ALERTAS_CORREO_DESTINATARIOS: ${ALERTAS_CORREO_DESTINATARIOS:-}
+    ports:
+      - "3000:3000"
+    volumes:
+      # Los documentos subidos deben sobrevivir a que se recree el
+      # contenedor -- igual que la base de datos, van en un volumen aparte.
+      - jaym_backend_storage:/app/storage/documentos
+
+volumes:
+  jaym_postgres_datos:
+  jaym_backend_storage:

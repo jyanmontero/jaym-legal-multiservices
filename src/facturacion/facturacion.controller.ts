@@ -1,0 +1,232 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Res,
+  UseGuards,
+  NotFoundException,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import type { Response } from 'express';
+import { FacturacionService } from './facturacion.service.js';
+import { PdfService } from './pdf/pdf.service.js';
+import { Cliente } from '../clientes/cliente.entity.js';
+import { Expediente } from '../expedientes/expediente.entity.js';
+import { CreateCotizacionDto, CambiarEstadoCotizacionDto } from './dto/cotizacion.dto.js';
+import { CreateFacturaDto, UpdateFacturaDto } from './dto/factura.dto.js';
+import { CreatePagoDto } from './dto/pago.dto.js';
+import { RolesGuard } from '../auth/guards/roles.guard.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
+import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
+import { EstadoCotizacion, EstadoFactura, ROLES_CON_ACCESO_FACTURACION, RolUsuario } from '../common/enums/index.js';
+
+@Controller('cotizaciones')
+@UseGuards(RolesGuard)
+@Roles(...ROLES_CON_ACCESO_FACTURACION)
+export class CotizacionesController {
+  constructor(
+    private readonly facturacionService: FacturacionService,
+    private readonly pdfService: PdfService,
+    @InjectRepository(Cliente) private readonly clienteRepo: Repository<Cliente>,
+    @InjectRepository(Expediente) private readonly expedienteRepo: Repository<Expediente>,
+  ) {}
+
+  @Get()
+  listar(
+    @Query('clienteId') clienteId?: string,
+    @Query('expedienteId') expedienteId?: string,
+    @Query('estado') estado?: EstadoCotizacion,
+    @Query('pagina') pagina?: string,
+    @Query('porPagina') porPagina?: string,
+  ) {
+    return this.facturacionService.listarCotizaciones(
+      { clienteId, expedienteId, estado },
+      { pagina, porPagina },
+    );
+  }
+
+  @Get(':id')
+  obtener(@Param('id') id: string) {
+    return this.facturacionService.obtenerCotizacion(id);
+  }
+
+  // Igual que ClientesController.crear: 200 en vez de 201 porque la
+  // respuesta puede traer `duplicados` en vez de la cotización creada
+  // cuando el cliente nuevo (clienteNuevo) coincide con uno existente.
+  @Post()
+  @HttpCode(HttpStatus.OK)
+  crear(@Body() dto: CreateCotizacionDto, @CurrentUser('sub') usuarioId: string) {
+    return this.facturacionService.crearCotizacion(dto, usuarioId);
+  }
+
+  @Post(':id/estado')
+  cambiarEstado(@Param('id') id: string, @Body() dto: CambiarEstadoCotizacionDto) {
+    return this.facturacionService.cambiarEstadoCotizacion(id, dto.estado);
+  }
+
+  @Post(':id/convertir-a-factura')
+  convertir(@Param('id') id: string, @CurrentUser('sub') usuarioId: string) {
+    return this.facturacionService.convertirCotizacionAFactura(id, usuarioId);
+  }
+
+  // Crea una copia de la cotización (nuevo número, estado "borrador") para
+  // reutilizar rápido una cotización parecida sin tener que rehacerla desde
+  // cero. Equivalente práctico de "Crear duplicado" de Brisk, pero solo
+  // para cotizaciones -- nunca para facturas (ver nota en FacturasController).
+  @Post(':id/duplicar')
+  duplicar(@Param('id') id: string, @CurrentUser('sub') usuarioId: string) {
+    return this.facturacionService.duplicarCotizacion(id, usuarioId);
+  }
+
+  // Elimina la cotizacion por completo -- pensada para corregir una que
+  // quedó mal cargada, no como flujo normal de trabajo.
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  eliminar(@Param('id') id: string) {
+    return this.facturacionService.eliminarCotizacion(id);
+  }
+
+  @Get(':id/pdf')
+  async pdf(@Param('id') id: string, @Res() res: Response) {
+    const cotizacion = await this.facturacionService.obtenerCotizacion(id);
+    const cliente = await this.clienteRepo.findOne({ where: { id: cotizacion.clienteId } });
+    if (!cliente) throw new NotFoundException('Cliente no encontrado');
+    const expediente = cotizacion.expedienteId
+      ? await this.expedienteRepo.findOne({ where: { id: cotizacion.expedienteId } })
+      : null;
+    const buffer = await this.pdfService.generarCotizacionPdf(cotizacion, cliente, expediente?.codigo);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${cotizacion.numero}.pdf"`);
+    res.send(buffer);
+  }
+}
+
+@Controller('facturas')
+@UseGuards(RolesGuard)
+@Roles(...ROLES_CON_ACCESO_FACTURACION)
+export class FacturasController {
+  constructor(
+    private readonly facturacionService: FacturacionService,
+    private readonly pdfService: PdfService,
+    @InjectRepository(Cliente) private readonly clienteRepo: Repository<Cliente>,
+    @InjectRepository(Expediente) private readonly expedienteRepo: Repository<Expediente>,
+  ) {}
+
+  @Get()
+  listar(
+    @Query('clienteId') clienteId?: string,
+    @Query('expedienteId') expedienteId?: string,
+    @Query('estado') estado?: EstadoFactura,
+    @Query('pagina') pagina?: string,
+    @Query('porPagina') porPagina?: string,
+  ) {
+    return this.facturacionService.listarFacturas(
+      { clienteId, expedienteId, estado },
+      { pagina, porPagina },
+    );
+  }
+
+  @Get(':id')
+  obtener(@Param('id') id: string) {
+    return this.facturacionService.obtenerFactura(id);
+  }
+
+  @Post()
+  crear(@Body() dto: CreateFacturaDto, @CurrentUser('sub') usuarioId: string) {
+    return this.facturacionService.crearFactura(dto, usuarioId);
+  }
+
+  // Edita los campos de una factura ya guardada (concepto, items, fechas,
+  // NCF, notas, direcciones...). Reservado al superadministrador -- el
+  // resto de roles con acceso a facturación solo puede consultar, registrar
+  // pagos o anular. El monto pagado sigue siendo derivado de los pagos
+  // registrados, no se edita aquí (ver FacturacionService.registrarPago).
+  @Patch(':id')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.SUPERADMINISTRADOR)
+  editar(
+    @Param('id') id: string,
+    @Body() dto: UpdateFacturaDto,
+    @CurrentUser('sub') usuarioId: string,
+  ) {
+    return this.facturacionService.actualizarFactura(id, dto, usuarioId);
+  }
+
+  @Post(':id/anular')
+  anular(@Param('id') id: string, @CurrentUser('sub') usuarioId: string) {
+    return this.facturacionService.anularFactura(id, usuarioId);
+  }
+
+  @Get(':id/historial')
+  historial(@Param('id') id: string) {
+    return this.facturacionService.historialFactura(id);
+  }
+
+  // Elimina la factura por completo -- pensada para corregir una que quedó
+  // mal cargada (duplicada, creada por error). Para anular una factura
+  // válida ya emitida, usa /facturas/:id/anular en vez de esto.
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  eliminar(@Param('id') id: string) {
+    return this.facturacionService.eliminarFactura(id);
+  }
+
+  @Get(':id/pagos')
+  listarPagos(@Param('id') id: string) {
+    return this.facturacionService.listarPagos(id);
+  }
+
+  @Delete(':id/pagos/:pagoId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  eliminarPago(@Param('id') id: string, @Param('pagoId') pagoId: string) {
+    return this.facturacionService.eliminarPago(id, pagoId);
+  }
+
+  @Post(':id/pagos')
+  registrarPago(
+    @Param('id') id: string,
+    @Body() dto: CreatePagoDto,
+    @CurrentUser('sub') usuarioId: string,
+  ) {
+    return this.facturacionService.registrarPago(id, dto, usuarioId);
+  }
+
+  @Get(':id/pdf')
+  async pdf(@Param('id') id: string, @Res() res: Response) {
+    const factura = await this.facturacionService.obtenerFactura(id);
+    const cliente = await this.clienteRepo.findOne({ where: { id: factura.clienteId } });
+    if (!cliente) throw new NotFoundException('Cliente no encontrado');
+    const expediente = factura.expedienteId
+      ? await this.expedienteRepo.findOne({ where: { id: factura.expedienteId } })
+      : null;
+    const buffer = await this.pdfService.generarFacturaPdf(factura, cliente, expediente?.codigo);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${factura.numero}.pdf"`);
+    res.send(buffer);
+  }
+}
+
+@Controller('facturacion')
+@UseGuards(RolesGuard)
+@Roles(...ROLES_CON_ACCESO_FACTURACION)
+export class FacturacionController {
+  constructor(private readonly facturacionService: FacturacionService) {}
+
+  @Get('estado-cuenta/:clienteId')
+  estadoDeCuenta(@Param('clienteId') clienteId: string) {
+    return this.facturacionService.estadoDeCuenta(clienteId);
+  }
+
+  @Get('dashboard')
+  dashboard() {
+    return this.facturacionService.dashboardFinanciero();
+  }
+}
