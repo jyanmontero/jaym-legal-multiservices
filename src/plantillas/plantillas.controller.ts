@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Patch, Body, Param, Query, Res, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { PlantillasService } from './plantillas.service.js';
 import { DocumentosService } from '../documentos/documentos.service.js';
@@ -44,6 +45,7 @@ export class SolicitudesDocumentoPublicoController {
 
   // Catálogo público -- para que la web/landing muestre las plantillas
   // disponibles con su precio, sin necesidad de sesión.
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @Public()
   @Get('publico/catalogo')
   catalogoPublico() {
@@ -52,18 +54,21 @@ export class SolicitudesDocumentoPublicoController {
 
   // Autoservicio: cualquiera elige una plantilla y arranca su propia
   // solicitud, sin que el despacho la cree primero.
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Public()
   @Post('publico/iniciar')
   iniciarPublico(@Body() dto: IniciarSolicitudPublicaDto) {
     return this.plantillasService.iniciarPublico(dto);
   }
 
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Public()
   @Get('publico/:token')
   obtenerPublico(@Param('token') token: string) {
     return this.plantillasService.obtenerPorToken(token);
   }
 
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Public()
   @Post('publico/:token')
   completarPublico(@Param('token') token: string, @Body() dto: CompletarSolicitudDto) {

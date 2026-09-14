@@ -177,7 +177,15 @@ export class PlantillasService {
     const plantilla = obtenerPlantilla(solicitud.plantillaClave);
     if (!plantilla) throw new NotFoundException('Enlace no válido o expirado');
 
-    const datosFinales = { ...solicitud.datos, ...dto.datos };
+    // Endurecimiento de seguridad (auditoría 14-sep-2026): este endpoint es
+    // público (sin JWT) -- 'dto.datos' es un objeto libre que llega
+    // directo de un desconocido en internet. Antes de fusionarlo, se
+    // descarta cualquier clave que no esté declarada en los campos de la
+    // plantilla y se limita el tamaño de cada valor, para que no se pueda
+    // usar este formulario para inflar la base de datos ni inyectar datos
+    // arbitrarios fuera de lo que el formulario realmente pide.
+    const datosSaneados = this.sanitizarDatosPublicos(plantilla, dto.datos);
+    const datosFinales = { ...solicitud.datos, ...datosSaneados };
     const faltantes = camposFaltantes(plantilla, datosFinales);
     if (faltantes.length > 0) {
       throw new BadRequestException(`Faltan campos obligatorios: ${faltantes.join(', ')}`);
@@ -436,5 +444,24 @@ ${hechos}
       advertencia:
         'Borrador generado por IA -- verifica personalmente cada ley, artículo y sentencia citada antes de usarlo. No se puede aprobar este documento sin confirmar esa verificación.',
     };
+  }
+  // Filtra 'datos' entrantes de un endpoint publico a solo las claves
+  // declaradas en la plantilla, forzando string y un tope de longitud
+  // razonable por campo (los 'textarea' pueden ser mas largos que un
+  // 'texto' simple).
+  private sanitizarDatosPublicos(
+    plantilla: { campos: { clave: string; tipo?: string }[] },
+    datos: Record<string, unknown>,
+  ): Record<string, string> {
+    const clavesValidas = new Set(plantilla.campos.map((c) => c.clave));
+    const resultado: Record<string, string> = {};
+    for (const [clave, valor] of Object.entries(datos ?? {})) {
+      if (!clavesValidas.has(clave)) continue;
+      if (typeof valor !== 'string') continue;
+      const campo = plantilla.campos.find((c) => c.clave === clave);
+      const tope = campo?.tipo === 'textarea' ? 5000 : 500;
+      resultado[clave] = valor.slice(0, tope);
+    }
+    return resultado;
   }
 }
