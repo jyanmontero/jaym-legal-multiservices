@@ -70,6 +70,10 @@ export class CreateFacturaDto {
 
   @IsOptional()
   @IsString()
+  enlacePago?: string;
+
+  @IsOptional()
+  @IsString()
   direccionFacturacion?: string;
 
   @IsOptional()
@@ -136,6 +140,10 @@ export class UpdateFacturaDto {
   @IsOptional()
   @IsString()
   vendedor?: string;
+
+  @IsOptional()
+  @IsString()
+  enlacePago?: string;
 
   @IsOptional()
   @IsString()

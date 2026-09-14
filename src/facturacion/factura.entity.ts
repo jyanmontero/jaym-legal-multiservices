@@ -82,6 +82,13 @@ export class Factura {
   @Column('text', { nullable: true })
   notas?: string;
 
+  // Enlace de pago en línea (ej. generado en HandyPay/otra pasarela) para
+  // que el cliente pague esta factura con tarjeta sin necesidad de
+  // transferencia bancaria. Se pega manualmente por ahora -- no hay
+  // generación automática todavía, ver PdfService y correo de factura.
+  @Column({ nullable: true })
+  enlacePago?: string;
+
   // --- Campos estilo "factura comercial" (opcionales) --------------------
   @Column({ nullable: true })
   condicionesPago?: string; // ej. "Contado" o "Crédito a 30 días"

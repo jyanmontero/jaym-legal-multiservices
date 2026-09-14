@@ -286,6 +286,7 @@ export class FacturacionService {
       direccionFacturacion?: string;
       direccionEnvio?: string;
       costoEnvio?: number;
+      enlacePago?: string;
     },
     usuarioId: string,
     manager: EntityManager,
@@ -315,6 +316,7 @@ export class FacturacionService {
       vendedor: dto.vendedor,
       direccionFacturacion: dto.direccionFacturacion,
       direccionEnvio: dto.direccionEnvio,
+      enlacePago: dto.enlacePago,
       fechaEmision: dto.fechaEmision ?? hoyISO(),
       fechaVencimiento: dto.fechaVencimiento,
       creadoPorId: usuarioId,
@@ -426,6 +428,7 @@ export class FacturacionService {
         vendedor: dto.vendedor ?? factura.vendedor,
         direccionFacturacion: dto.direccionFacturacion ?? factura.direccionFacturacion,
         direccionEnvio: dto.direccionEnvio ?? factura.direccionEnvio,
+        enlacePago: dto.enlacePago ?? factura.enlacePago,
       });
 
       if (factura.expedienteId) {

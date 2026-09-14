@@ -75,6 +75,7 @@ interface DatosDocumento {
   total: string;
   montoPagado?: string;
   notas?: string;
+  enlacePago?: string;
   condicionesPago?: string;
   numeroOrdenCompra?: string;
   vendedor?: string;
@@ -108,6 +109,7 @@ export class PdfService {
       total: factura.total,
       montoPagado: factura.montoPagado,
       notas: factura.notas,
+      enlacePago: factura.enlacePago,
       condicionesPago: factura.condicionesPago,
       numeroOrdenCompra: factura.numeroOrdenCompra,
       vendedor: factura.vendedor,
@@ -398,6 +400,11 @@ export class PdfService {
           ...b.cuentas.map((c) => ({ text: `${c.tipo}: ${c.numero}`, fontSize: 8.5, margin: [10, 0, 0, 0] })),
         ]),
 
+        ...(d.enlacePago ? [
+          { text: 'PAGO EN LÍNEA CON TARJETA', bold: true, fontSize: 9, color: '#0a1e3f', margin: [0, 10, 0, 4] },
+          { text: 'También puedes pagar esta factura con tarjeta de crédito o débito usando este enlace seguro:', fontSize: 8.5, margin: [0, 0, 0, 2] },
+          { text: d.enlacePago, fontSize: 8.5, color: '#1d4ed8', link: d.enlacePago, decoration: 'underline' },
+        ] : []),
         ...(d.notas ? [{ text: 'NOTAS', bold: true, fontSize: 9, color: '#0a1e3f', margin: [0, 16, 0, 4] }, { text: d.notas, fontSize: 8.5, alignment: 'justify' }] : []),
       ],
     };
