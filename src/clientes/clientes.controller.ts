@@ -8,15 +8,69 @@ import {
   Patch,
   HttpCode,
   HttpStatus,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { extname } from 'path';
 import { ClientesService } from './clientes.service.js';
+import { ExtraccionIdentidadService } from './extraccion-identidad.service.js';
 import { CreateClienteDto, UpdateClienteDto } from './dto/create-cliente.dto.js';
 import { TipoCliente } from '../common/enums/index.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 
+// Fotos o PDFs de cédula/pasaporte -- no es una subida de documento del
+// expediente (eso es el módulo `documentos`), por eso tiene su propia
+// validación más estrecha en vez de reusar la de DocumentosController.
+const TAMANO_MAXIMO_IDENTIDAD_BYTES = 15 * 1024 * 1024; // 15 MB
+const EXTENSIONES_IDENTIDAD_PERMITIDAS = new Set(['.pdf', '.jpg', '.jpeg', '.png', '.webp', '.heic', '.tif', '.tiff']);
+const TIPOS_MIME_IDENTIDAD_PERMITIDOS = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/tiff',
+  'application/octet-stream',
+]);
+
+const opcionesMulterIdentidad = {
+  storage: memoryStorage(),
+  limits: { fileSize: TAMANO_MAXIMO_IDENTIDAD_BYTES },
+  fileFilter: (_req: unknown, file: Express.Multer.File, cb: (error: Error | null, acceptFile: boolean) => void) => {
+    const extension = extname(file.originalname).toLowerCase();
+    if (!EXTENSIONES_IDENTIDAD_PERMITIDAS.has(extension) || !TIPOS_MIME_IDENTIDAD_PERMITIDOS.has(file.mimetype)) {
+      cb(new BadRequestException('Formato no permitido. Sube una foto (JPG, PNG, HEIC) o un PDF de la cédula o pasaporte.'), false);
+      return;
+    }
+    cb(null, true);
+  },
+};
+
 @Controller('clientes')
 export class ClientesController {
-  constructor(private readonly clientesService: ClientesService) {}
+  constructor(
+    private readonly clientesService: ClientesService,
+    private readonly extraccionIdentidadService: ExtraccionIdentidadService,
+  ) {}
+
+  /**
+   * Lee una foto o PDF de cédula/pasaporte con IA y devuelve los datos
+   * detectados para pre-llenar el formulario de "Nuevo cliente" -- no crea
+   * ni modifica ningún cliente. El usuario siempre revisa/corrige antes de
+   * guardar (sección "crear cliente a partir de foto de cédula" del
+   * requerimiento original).
+   */
+  @Post('extraer-identidad')
+  @UseInterceptors(FileInterceptor('documento', opcionesMulterIdentidad))
+  extraerIdentidad(@UploadedFile() archivo: Express.Multer.File) {
+    if (!archivo) {
+      throw new BadRequestException('No se recibió ningún archivo.');
+    }
+    return this.extraccionIdentidadService.extraerDeArchivo(archivo.buffer, archivo.mimetype);
+  }
 
   @Get()
   buscar(
