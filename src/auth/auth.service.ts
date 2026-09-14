@@ -42,8 +42,21 @@ export class AuthService {
       throw new UnauthorizedException('Este usuario está suspendido. Contacte al administrador.');
     }
 
+    // Bloqueo temporal tras varios intentos fallidos seguidos (auditoría
+    // 14-sep-2026) -- complementa el límite de 5/min por IP del endpoint.
+    const bloqueadoHasta = await this.usuariosService.obtenerBloqueoVigente(usuario.id);
+    if (bloqueadoHasta) {
+      const minutosRestantes = Math.ceil((bloqueadoHasta.getTime() - Date.now()) / 60000);
+      throw new UnauthorizedException(
+        `Esta cuenta quedó bloqueada temporalmente por varios intentos fallidos. Intenta de nuevo en ${minutosRestantes} minuto(s).`,
+      );
+    }
+
     const passwordValido = await bcrypt.compare(dto.password, usuario.passwordHash);
-    if (!passwordValido) throw credencialesInvalidas;
+    if (!passwordValido) {
+      await this.usuariosService.registrarIntentoFallido(usuario.id);
+      throw credencialesInvalidas;
+    }
 
     if (usuario.dosFactorActivo) {
       if (!dto.codigoDosFactor) {
@@ -56,6 +69,7 @@ export class AuthService {
     }
 
     await this.usuariosService.marcarUltimoAcceso(usuario.id);
+    await this.usuariosService.resetearIntentosFallidos(usuario.id);
 
     const payload = { sub: usuario.id, correo: usuario.correo, rol: usuario.rol };
     return {

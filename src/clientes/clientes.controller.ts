@@ -20,6 +20,7 @@ import { ExtraccionIdentidadService } from './extraccion-identidad.service.js';
 import { CreateClienteDto, UpdateClienteDto } from './dto/create-cliente.dto.js';
 import { TipoCliente } from '../common/enums/index.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
+import { Throttle } from '@nestjs/throttler';
 
 // Fotos o PDFs de cédula/pasaporte -- no es una subida de documento del
 // expediente (eso es el módulo `documentos`), por eso tiene su propia
@@ -63,6 +64,11 @@ export class ClientesController {
    * guardar (sección "crear cliente a partir de foto de cédula" del
    * requerimiento original).
    */
+  // Limite propio (aparte del global de 100/min): cada llamada cuesta una
+  // petición real a la API de Anthropic -- sin esto, una cuenta interna
+  // comprometida (o solo un error del cliente) podria generar un gasto
+  // grande sin que nadie lo note (auditoría 14-sep-2026).
+  @Throttle({ default: { limit: 15, ttl: 60000 } })
   @Post('extraer-identidad')
   @UseInterceptors(FileInterceptor('documento', opcionesMulterIdentidad))
   extraerIdentidad(@UploadedFile() archivo: Express.Multer.File) {

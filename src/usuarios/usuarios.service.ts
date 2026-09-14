@@ -152,6 +152,50 @@ export class UsuariosService {
     await this.usuarioRepo.update(id, { ultimoAcceso: new Date() });
   }
 
+  // --- Bloqueo tras intentos fallidos de login (auditoría 14-sep-2026) ---
+  // Máximo de intentos fallidos consecutivos antes de bloquear la cuenta
+  // temporalmente, y cuánto dura ese bloqueo. Complementa (no reemplaza)
+  // el límite de 5 intentos/minuto por IP que ya existía en el endpoint.
+  private static readonly MAX_INTENTOS_FALLIDOS = 10;
+  private static readonly MINUTOS_BLOQUEO = 15;
+
+  /**
+   * Si la cuenta tiene un bloqueo vigente, lo devuelve. Si el bloqueo ya
+   * venció, lo limpia (junto con el contador) para que el usuario arranque
+   * con intentos frescos, y devuelve null.
+   */
+  async obtenerBloqueoVigente(id: string): Promise<Date | null> {
+    const usuario = await this.usuarioRepo.findOne({ where: { id } });
+    if (!usuario?.bloqueadoHastaLogin) return null;
+    if (usuario.bloqueadoHastaLogin > new Date()) {
+      return usuario.bloqueadoHastaLogin;
+    }
+    await this.usuarioRepo.update(id, { intentosFallidosLogin: 0, bloqueadoHastaLogin: undefined });
+    return null;
+  }
+
+  /**
+   * Suma un intento fallido. Si llega al máximo, activa el bloqueo
+   * temporal. Devuelve la fecha de bloqueo si quedó bloqueada, o null si
+   * todavía le quedan intentos.
+   */
+  async registrarIntentoFallido(id: string): Promise<Date | null> {
+    const usuario = await this.usuarioRepo.findOne({ where: { id } });
+    if (!usuario) return null;
+    const intentos = usuario.intentosFallidosLogin + 1;
+    if (intentos >= UsuariosService.MAX_INTENTOS_FALLIDOS) {
+      const bloqueadoHasta = new Date(Date.now() + UsuariosService.MINUTOS_BLOQUEO * 60 * 1000);
+      await this.usuarioRepo.update(id, { intentosFallidosLogin: intentos, bloqueadoHastaLogin: bloqueadoHasta });
+      return bloqueadoHasta;
+    }
+    await this.usuarioRepo.update(id, { intentosFallidosLogin: intentos });
+    return null;
+  }
+
+  async resetearIntentosFallidos(id: string): Promise<void> {
+    await this.usuarioRepo.update(id, { intentosFallidosLogin: 0, bloqueadoHastaLogin: undefined });
+  }
+
   async activarDosFactor(id: string, secreto: string): Promise<void> {
     await this.usuarioRepo.update(id, {
       dosFactorSecreto: this.cifradoService.cifrar(secreto),

@@ -49,6 +49,16 @@ export class Usuario {
   @Column({ type: 'timestamp', nullable: true })
   ultimoAcceso?: Date;
 
+  // Endurecimiento de seguridad (auditoría 14-sep-2026): bloqueo temporal
+  // de la cuenta tras varios intentos de login fallidos seguidos, además
+  // del límite por IP que ya existía en el endpoint (ver
+  // auth.controller.ts). Se resetean ambos en cuanto hay un login exitoso.
+  @Column({ type: 'int', default: 0 })
+  intentosFallidosLogin: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  bloqueadoHastaLogin?: Date;
+
   // Excepciones puntuales a MATRIZ_PERMISOS_POR_ROL para este usuario en
   // concreto (sección 15: "Definir permisos independientes"). Solo se
   // guardan las diferencias respecto al rol -- ej. { "facturar": true }
