@@ -139,6 +139,8 @@ export class DocumentosController {
   }
 
   @Get('papelera')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.SUPERADMINISTRADOR)
   listarPapelera() {
     return this.documentosService.listarPapelera();
   }
