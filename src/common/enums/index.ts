@@ -107,6 +107,72 @@ export enum RolUsuario {
   RECEPCION = 'recepcion',
 }
 
+// Permisos granulares por acción -- sección 15 del requerimiento. Cada rol
+// interno tiene un conjunto por defecto (ver MATRIZ_PERMISOS_POR_ROL); un
+// usuario puntual puede tener excepciones en
+// Usuario.permisosPersonalizados (ver usuario.entity.ts) para casos
+// puntuales sin tener que crear un rol nuevo solo para esa persona.
+export enum Permiso {
+  CONSULTAR = 'consultar',
+  CREAR = 'crear',
+  MODIFICAR = 'modificar',
+  DESCARGAR = 'descargar',
+  FACTURAR = 'facturar',
+  REGISTRAR_PAGOS = 'registrar_pagos',
+  ENVIAR_CORREOS = 'enviar_correos',
+  RESTAURAR_VERSIONES = 'restaurar_versiones',
+  ARCHIVAR = 'archivar',
+  ELIMINAR_LOGICO = 'eliminar_logico',
+  ACCEDER_CONFIDENCIAL = 'acceder_confidencial',
+}
+
+// Permisos por defecto de cada rol interno. Se armó a partir del
+// comportamiento real que ya tenía cada @Roles(...) esparcido por los
+// controllers (documentos, facturación, plantillas, etc.) al 14 de
+// septiembre de 2026 -- no amplía el acceso de nadie, solo lo hace
+// explícito y consultable en un solo lugar. RESTAURAR_VERSIONES y
+// ELIMINAR_LOGICO quedan solo para superadministrador, igual que ya
+// exigía el requerimiento original ("Solamente el administrador podrá
+// restaurar una versión").
+export const MATRIZ_PERMISOS_POR_ROL: Record<string, Permiso[]> = {
+  superadministrador: Object.values(Permiso),
+  abogado_administrador: [
+    Permiso.CONSULTAR,
+    Permiso.CREAR,
+    Permiso.MODIFICAR,
+    Permiso.DESCARGAR,
+    Permiso.FACTURAR,
+    Permiso.REGISTRAR_PAGOS,
+    Permiso.ENVIAR_CORREOS,
+    Permiso.ARCHIVAR,
+    Permiso.ACCEDER_CONFIDENCIAL,
+  ],
+  abogado_asociado: [
+    Permiso.CONSULTAR,
+    Permiso.CREAR,
+    Permiso.MODIFICAR,
+    Permiso.DESCARGAR,
+    Permiso.ENVIAR_CORREOS,
+    Permiso.ARCHIVAR,
+    Permiso.ACCEDER_CONFIDENCIAL,
+  ],
+  asistente_paralegal: [
+    Permiso.CONSULTAR,
+    Permiso.CREAR,
+    Permiso.MODIFICAR,
+    Permiso.DESCARGAR,
+    Permiso.ENVIAR_CORREOS,
+  ],
+  facturacion_contabilidad: [
+    Permiso.CONSULTAR,
+    Permiso.DESCARGAR,
+    Permiso.FACTURAR,
+    Permiso.REGISTRAR_PAGOS,
+    Permiso.ENVIAR_CORREOS,
+  ],
+  recepcion: [Permiso.CONSULTAR, Permiso.CREAR, Permiso.DESCARGAR],
+};
+
 export enum EstadoUsuario {
   ACTIVO = 'activo',
   SUSPENDIDO = 'suspendido',

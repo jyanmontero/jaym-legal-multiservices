@@ -49,6 +49,15 @@ export class Usuario {
   @Column({ type: 'timestamp', nullable: true })
   ultimoAcceso?: Date;
 
+  // Excepciones puntuales a MATRIZ_PERMISOS_POR_ROL para este usuario en
+  // concreto (sección 15: "Definir permisos independientes"). Solo se
+  // guardan las diferencias respecto al rol -- ej. { "facturar": true }
+  // le da permiso de facturar a un asistente sin tener que crearle un rol
+  // nuevo solo por eso. Si un permiso no aparece aquí, manda el valor por
+  // defecto del rol (ver auth/permisos/tiene-permiso.ts).
+  @Column({ type: 'jsonb', nullable: true })
+  permisosPersonalizados?: Partial<Record<string, boolean>>;
+
   @CreateDateColumn()
   creadoEn: Date;
 

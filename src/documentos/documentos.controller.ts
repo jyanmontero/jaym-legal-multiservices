@@ -24,7 +24,9 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import type { JwtPayloadUsuario } from '../auth/decorators/current-user.decorator.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
-import { RolUsuario } from '../common/enums/index.js';
+import { RolUsuario, Permiso } from '../common/enums/index.js';
+import { Permisos } from '../auth/decorators/permisos.decorator.js';
+import { PermisosGuard } from '../auth/guards/permisos.guard.js';
 
 // Límite conservador para un despacho pequeño; ajustar según necesidad real.
 const TAMANO_MAXIMO_BYTES = 25 * 1024 * 1024; // 25 MB
@@ -139,8 +141,8 @@ export class DocumentosController {
   }
 
   @Get('papelera')
-  @UseGuards(RolesGuard)
-  @Roles(RolUsuario.SUPERADMINISTRADOR)
+  @UseGuards(PermisosGuard)
+  @Permisos(Permiso.ELIMINAR_LOGICO)
   listarPapelera() {
     return this.documentosService.listarPapelera();
   }
@@ -186,15 +188,15 @@ export class DocumentosController {
   // abogado, y antes cualquier usuario autenticado podía hacerlo sin
   // importar su rol (hallazgo de la auditoría de resistencia y seguridad).
   @Delete(':id')
-  @UseGuards(RolesGuard)
-  @Roles(RolUsuario.SUPERADMINISTRADOR)
+  @UseGuards(PermisosGuard)
+  @Permisos(Permiso.ELIMINAR_LOGICO)
   eliminar(@Param('id') id: string, @CurrentUser('sub') usuarioId: string) {
     return this.documentosService.eliminar(id, usuarioId);
   }
 
   @Post(':id/restaurar')
-  @UseGuards(RolesGuard)
-  @Roles(RolUsuario.SUPERADMINISTRADOR)
+  @UseGuards(PermisosGuard)
+  @Permisos(Permiso.RESTAURAR_VERSIONES)
   restaurar(@Param('id') id: string) {
     return this.documentosService.restaurar(id);
   }

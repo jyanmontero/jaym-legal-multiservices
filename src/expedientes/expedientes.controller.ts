@@ -16,9 +16,9 @@ import { ExpedientesService } from './expedientes.service.js';
 import { CreateExpedienteDto, UpdateExpedienteDto } from './dto/expediente.dto.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import type { JwtPayloadUsuario } from '../auth/decorators/current-user.decorator.js';
-import { Roles } from '../auth/decorators/roles.decorator.js';
-import { RolesGuard } from '../auth/guards/roles.guard.js';
-import { RolUsuario } from '../common/enums/index.js';
+import { RolUsuario, Permiso } from '../common/enums/index.js';
+import { Permisos } from '../auth/decorators/permisos.decorator.js';
+import { PermisosGuard } from '../auth/guards/permisos.guard.js';
 
 @Controller('expedientes')
 export class ExpedientesController {
@@ -73,8 +73,8 @@ export class ExpedientesController {
   // mal instrumentado (duplicado, creado por error), no como flujo normal.
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(RolesGuard)
-  @Roles(RolUsuario.SUPERADMINISTRADOR)
+  @UseGuards(PermisosGuard)
+  @Permisos(Permiso.ELIMINAR_LOGICO)
   eliminar(@Param('id') id: string) {
     return this.expedientesService.eliminar(id);
   }
@@ -82,8 +82,8 @@ export class ExpedientesController {
   // Restringido a Superadministrador — sección 7 del requerimiento: solo
   // ese rol puede restaurar una versión anterior de un expediente.
   @Post(':id/restaurar/:historialId')
-  @UseGuards(RolesGuard)
-  @Roles(RolUsuario.SUPERADMINISTRADOR)
+  @UseGuards(PermisosGuard)
+  @Permisos(Permiso.RESTAURAR_VERSIONES)
   restaurar(
     @Param('id') id: string,
     @Param('historialId') historialId: string,
