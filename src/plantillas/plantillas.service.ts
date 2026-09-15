@@ -445,6 +445,97 @@ ${hechos}
         'Borrador generado por IA -- verifica personalmente cada ley, artículo y sentencia citada antes de usarlo. No se puede aprobar este documento sin confirmar esa verificación.',
     };
   }
+
+  /**
+   * Genera un BORRADOR COMPLETO de un escrito (hechos, fundamento de
+   * derecho y petición) a partir de una descripción breve, informal, de
+   * la situación -- pensado para arrancar una instancia/escrito motivado
+   * (ver plantilla 'instancia_motivada') sin tener que redactar cada
+   * sección por separado. Es una operación sin estado, igual que
+   * generarFundamentoConIA -- no guarda nada por sí sola: el abogado
+   * revisa y edita cada sección antes de pegarla en el formulario y
+   * enviarlo.
+   *
+   * Misma advertencia que generarFundamentoConIA, ahora para las tres
+   * secciones: un modelo de lenguaje puede inventar hechos, cifras,
+   * números de sentencia o artículos que no existen. El resultado es
+   * siempre un punto de partida a corregir, nunca un texto listo para
+   * depositar sin revisión humana completa.
+   */
+  async generarBorradorCompletoConIA(datos: {
+    destinatario?: string;
+    asunto?: string;
+    descripcionSituacion: string;
+  }): Promise<{ hechos: string; fundamentoDerecho: string; peticion: string; advertencia: string }> {
+    const descripcionSituacion = String(datos.descripcionSituacion ?? '').trim();
+    if (!descripcionSituacion) {
+      throw new BadRequestException('Describe primero la situación antes de pedir un borrador completo.');
+    }
+
+    const anthropic = this.clienteAnthropic();
+
+    const herramientaBorrador: Anthropic.Tool = {
+      name: 'registrar_borrador_escrito',
+      description: 'Registra el borrador de las tres secciones de un escrito jurídico dirigido a un tribunal o institución.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          hechos: {
+            type: 'string',
+            description: 'Redacción en orden cronológico y en español jurídico dominicano de los hechos relevantes, tal como deben quedar expuestos ante el destinatario, a partir de la descripción informal que dio el abogado. No inventes hechos que el abogado no haya mencionado ni haya forma de inferir con certeza.',
+          },
+          fundamentoDerecho: {
+            type: 'string',
+            description: 'El apartado de fundamento de derecho (leyes y jurisprudencia aplicable) correspondiente a esos hechos. NUNCA inventes un número de sentencia, resolución, expediente o cita textual que no conozcas con certeza -- si aplica una ley o jurisprudencia pero no estás seguro del número o fecha exacta, descríbela en términos generales.',
+          },
+          peticion: {
+            type: 'string',
+            description: 'La petición concreta (lo que se solicita al destinatario), redactada a partir del objetivo que describió el abogado.',
+          },
+        },
+        required: ['hechos', 'fundamentoDerecho', 'peticion'],
+      },
+    };
+
+    const mensaje = await anthropic.messages.create({
+      model: 'claude-sonnet-5',
+      max_tokens: 2500,
+      system:
+        'Eres un asistente que ayuda a un abogado dominicano de JAYM LEGAL MULTISERVICES a redactar el primer borrador de una instancia o escrito motivado dirigido a un tribunal o institución de la República Dominicana, a partir de una descripción breve e informal que el abogado escribe con sus propias palabras. ' +
+        'Redacta en español jurídico dominicano, con tono formal, dividido en las tres secciones que pide la herramienta. ' +
+        'Regla más importante: NUNCA inventes un hecho, número de sentencia, resolución, expediente o cita textual que no conozcas con certeza a partir de lo que el abogado escribió. Si falta un dato necesario, dilo entre corchetes (ej. "[completar fecha exacta]") en vez de inventarlo. ' +
+        'Todo este texto es un BORRADOR que el abogado va a revisar, corregir y verificar por completo antes de usarlo -- nunca afirmes que un hecho o una cita ya fue verificada. ' +
+        'Usa siempre la herramienta registrar_borrador_escrito para responder.',
+      tools: [herramientaBorrador],
+      tool_choice: { type: 'tool', name: 'registrar_borrador_escrito' },
+      messages: [
+        {
+          role: 'user',
+          content:
+            `Destinatario de la instancia: ${datos.destinatario || '(no indicado)'}\n` +
+            `Asunto: ${datos.asunto || '(no indicado)'}\n\n` +
+            `Descripción de la situación, en palabras del abogado:\n${descripcionSituacion}\n\n` +
+            'A partir de esto, redacta el borrador de las tres secciones (hechos, fundamento de derecho y petición) usando la herramienta.',
+        },
+      ],
+    });
+
+    const bloqueHerramienta = mensaje.content.find(
+      (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === 'registrar_borrador_escrito',
+    );
+
+    if (!bloqueHerramienta) {
+      throw new BadRequestException('No se pudo generar el borrador. Intenta describir la situación con más detalle.');
+    }
+
+    const resultado = bloqueHerramienta.input as { hechos: string; fundamentoDerecho: string; peticion: string };
+
+    return {
+      ...resultado,
+      advertencia:
+        'Borrador generado por IA -- revisa y corrige los hechos, y verifica personalmente cada ley, artículo y sentencia citada antes de usarlo. No se puede aprobar este documento sin confirmar esa verificación.',
+    };
+  }
   // Filtra 'datos' entrantes de un endpoint publico a solo las claves
   // declaradas en la plantilla, forzando string y un tope de longitud
   // razonable por campo (los 'textarea' pueden ser mas largos que un

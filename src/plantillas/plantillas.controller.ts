@@ -8,6 +8,7 @@ import { CompletarSolicitudDto } from './dto/completar-solicitud.dto.js';
 import { RevisarSolicitudDocumentoDto } from './dto/revisar-solicitud.dto.js';
 import { ActualizarDatosSolicitudDto } from './dto/actualizar-datos.dto.js';
 import { GenerarFundamentoDto } from './dto/generar-fundamento.dto.js';
+import { GenerarBorradorCompletoDto } from './dto/generar-borrador-completo.dto.js';
 import { IniciarSolicitudPublicaDto } from './dto/iniciar-solicitud-publica.dto.js';
 import { ConfirmarPagoDto } from './dto/confirmar-pago.dto.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
@@ -155,6 +156,14 @@ export class SolicitudesDocumentoController {
   @Post('generar-fundamento-ia')
   generarFundamentoIA(@Body() dto: GenerarFundamentoDto) {
     return this.plantillasService.generarFundamentoConIA(dto);
+  }
+
+  // Borrador COMPLETO (hechos + fundamento de derecho + petición) a partir
+  // de una descripción breve de la situación -- igual que el anterior, no
+  // depende de que exista una solicitud y no guarda nada por sí solo.
+  @Post('generar-borrador-completo-ia')
+  generarBorradorCompletoIA(@Body() dto: GenerarBorradorCompletoDto) {
+    return this.plantillasService.generarBorradorCompletoConIA(dto);
   }
 
   @Get(':id/pdf')

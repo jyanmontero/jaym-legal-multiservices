@@ -19,6 +19,7 @@ import { AsistenteModule } from './asistente/asistente.module.js';
 import { PlantillasModule } from './plantillas/plantillas.module.js';
 import { BusquedaModule } from './busqueda/busqueda.module.js';
 import { ConflictosModule } from './conflictos/conflictos.module.js';
+import { AnalisisJuridicoModule } from './analisis-juridico/analisis-juridico.module.js';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard.js';
@@ -77,6 +78,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard.js';
     AlertasModule,
     FacturacionModule,
     ConflictosModule,
+    AnalisisJuridicoModule,
     HubSpotModule,
     GoogleCalendarModule,
     AsistenteModule,
