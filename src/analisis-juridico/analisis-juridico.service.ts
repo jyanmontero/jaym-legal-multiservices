@@ -183,4 +183,92 @@ export class AnalisisJuridicoService {
 
     return bloqueHerramienta.input as AnalisisDocumentoJuridico;
   }
+
+  /**
+   * A partir del mismo documento (foto/PDF) y, opcionalmente, del análisis
+   * ya hecho, redacta lo que el abogado pida en una instrucción libre --
+   * "redacta un informe sobre este documento", "redacta una instancia
+   * solicitando que se reconsidere esta decisión", etc. Es una operación
+   * sin estado, igual que las demás funciones de IA de este sistema: no
+   * guarda nada, el resultado es siempre un BORRADOR que el abogado debe
+   * revisar, corregir y verificar (citas, artículos, hechos) antes de
+   * usarlo para cualquier fin.
+   */
+  async generarAccionSobreDocumento(
+    buffer: Buffer,
+    mimeType: string,
+    instruccion: string,
+    analisisPrevio?: AnalisisDocumentoJuridico,
+  ): Promise<{ texto: string; advertencia: string }> {
+    const instruccionLimpia = String(instruccion ?? '').trim();
+    if (!instruccionLimpia) {
+      throw new BadRequestException('Escribe qué quieres que se redacte a partir de este documento.');
+    }
+
+    const anthropic = this.cliente();
+    const base64 = buffer.toString('base64');
+
+    const bloqueArchivo: Anthropic.ImageBlockParam | Anthropic.DocumentBlockParam =
+      mimeType === 'application/pdf'
+        ? {
+            type: 'document',
+            source: { type: 'base64', media_type: 'application/pdf', data: base64 },
+          }
+        : {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: mimeType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+              data: base64,
+            },
+          };
+
+    const contexto = analisisPrevio
+      ? `Análisis previo de este mismo documento (ya confirmado): ${JSON.stringify(analisisPrevio)}\n\n`
+      : '';
+
+    let respuesta: Anthropic.Message;
+    try {
+      respuesta = await anthropic.messages.create({
+        model: MODELO,
+        max_tokens: 2500,
+        system:
+          'Eres un asistente que ayuda a un abogado dominicano de JAYM LEGAL MULTISERVICES a redactar documentos (informes, instancias, escritos, resúmenes, cartas, lo que el abogado pida) a partir de un documento jurídico o administrativo (sentencia, resolución, notificación, informe, oficio, etc.) que se le adjunta como imagen o PDF, siguiendo la instrucción que el abogado escriba. ' +
+          'Redacta en español jurídico dominicano, con tono formal cuando el tipo de documento lo amerite. ' +
+          'Regla más importante: NUNCA inventes un hecho, número de sentencia, resolución, expediente, artículo o cita textual que no puedas leer con certeza en el documento adjunto o que el abogado no haya indicado en su instrucción. Si falta un dato necesario para completar lo que se pide, dilo entre corchetes (ej. "[completar número de expediente]") en vez de inventarlo. ' +
+          'Todo lo que redactes es un BORRADOR que el abogado va a revisar, corregir y verificar por completo antes de usarlo -- nunca afirmes que un hecho o una cita ya fue verificada.',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              bloqueArchivo,
+              {
+                type: 'text',
+                text: `${contexto}Instrucción del abogado: ${instruccionLimpia}`,
+              },
+            ],
+          },
+        ],
+      });
+    } catch (err) {
+      this.logger.error(`Error llamando a Anthropic para generar acción sobre documento: ${(err as Error).message}`);
+      throw new BadRequestException('No se pudo generar el borrador. Intenta de nuevo en unos minutos.');
+    }
+
+    const texto = respuesta.content
+      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+      .map((b) => b.text)
+      .join('\n')
+      .trim();
+
+    if (!texto) {
+      throw new BadRequestException('No se pudo generar el borrador. Intenta reformular la instrucción.');
+    }
+
+    return {
+      texto,
+      advertencia:
+        'Borrador generado por IA a partir del documento adjunto -- revisa cada hecho, fecha, artículo y cita antes de usarlo para cualquier fin.',
+    };
+  }
 }
