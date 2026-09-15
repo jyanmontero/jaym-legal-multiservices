@@ -18,6 +18,17 @@ export const MARCA_CORPORATIVA = {
 
 // Cláusula de condiciones y política de gestión — se imprime en cada
 // cotización y factura, tal como la definió la firma.
+// Identidad del abogado responsable de la firma -- se usa para redactar
+// documentos jurídicos (instancias, cartas, informes) donde el sistema
+// necesita generar el bloque de firma con datos exactos (nombre, cédula,
+// calidad), sin depender de que un modelo de IA los recuerde o los invente.
+export const ABOGADO_RESPONSABLE = {
+  tratamiento: 'LICDO.',
+  nombreCompleto: 'JOSEPH ALCIDES YAN MONTERO',
+  cedula: '026-0127311-9',
+  calidad: 'abogado de los tribunales de la República Dominicana',
+};
+
 export const CLAUSULA_GESTION =
   'Los plazos de respuesta son competencia exclusiva de la institución correspondiente. ' +
   'El profesional asumirá el seguimiento del trámite y realizará gestiones formales a partir ' +
