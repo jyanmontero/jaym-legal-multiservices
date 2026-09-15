@@ -112,7 +112,6 @@ export class ExpedientesController {
       rol: usuario.rol as RolUsuario,
     });
     const cliente = await this.clientesService.obtenerPorId(expediente.clienteId);
-    const resumen = await this.resumenCotizacionService.generarResumen(expediente, cliente);
-    return { resumen };
+    return this.resumenCotizacionService.generarResumen(expediente, cliente);
   }
 }
