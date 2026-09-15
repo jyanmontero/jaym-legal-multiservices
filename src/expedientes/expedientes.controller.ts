@@ -13,16 +13,22 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ExpedientesService } from './expedientes.service.js';
+import { ResumenCotizacionService } from './resumen-cotizacion.service.js';
 import { CreateExpedienteDto, UpdateExpedienteDto } from './dto/expediente.dto.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import type { JwtPayloadUsuario } from '../auth/decorators/current-user.decorator.js';
 import { RolUsuario, Permiso } from '../common/enums/index.js';
 import { Permisos } from '../auth/decorators/permisos.decorator.js';
 import { PermisosGuard } from '../auth/guards/permisos.guard.js';
+import { ClientesService } from '../clientes/clientes.service.js';
 
 @Controller('expedientes')
 export class ExpedientesController {
-  constructor(private readonly expedientesService: ExpedientesService) {}
+  constructor(
+    private readonly expedientesService: ExpedientesService,
+    private readonly resumenCotizacionService: ResumenCotizacionService,
+    private readonly clientesService: ClientesService,
+  ) {}
 
   @Get()
   listar(
@@ -90,5 +96,23 @@ export class ExpedientesController {
     @CurrentUser('sub') usuarioId: string,
   ) {
     return this.expedientesService.restaurarVersion(id, historialId, usuarioId, true);
+  }
+
+  // Genera el resumen técnico (sección 20: "Elegir el servicio" ->
+  // "Generar cotización") para que el abogado lo revise/edite y, si lo
+  // confirma, el frontend lo lleve pre-cargado al formulario normal de
+  // Cotizaciones (nunca crea la cotización desde aquí -- eso lo sigue
+  // haciendo el flujo ya existente de /cotizaciones).
+  @Post(':id/resumen-cotizacion')
+  @UseGuards(PermisosGuard)
+  @Permisos(Permiso.FACTURAR)
+  async generarResumenCotizacion(@Param('id') id: string, @CurrentUser() usuario: JwtPayloadUsuario) {
+    const expediente = await this.expedientesService.obtenerPorId(id, {
+      id: usuario.sub,
+      rol: usuario.rol as RolUsuario,
+    });
+    const cliente = await this.clientesService.obtenerPorId(expediente.clienteId);
+    const resumen = await this.resumenCotizacionService.generarResumen(expediente, cliente);
+    return { resumen };
   }
 }
