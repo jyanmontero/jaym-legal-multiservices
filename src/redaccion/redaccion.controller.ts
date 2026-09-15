@@ -8,7 +8,7 @@ import { RedaccionService, type TipoDocumentoRedaccion } from './redaccion.servi
 import { RedaccionDocxService } from './redaccion-docx.service.js';
 import { ExportarDocxDto } from './dto/exportar-docx.dto.js';
 
-const TAMANO_MAXIMO_REFERENCIA_BYTES = 20 * 1024 * 1024; // 20 MB por archivo
+const TAMANO_MAXIMO_REFERENCIA_BYTES = 30 * 1024 * 1024; // 30 MB por archivo (por debajo del límite de Claude para PDFs, ~32 MB)
 const EXTENSIONES_PERMITIDAS = new Set(['.pdf', '.jpg', '.jpeg', '.png', '.webp', '.heic', '.tif', '.tiff']);
 const TIPOS_MIME_PERMITIDOS = new Set([
   'application/pdf',

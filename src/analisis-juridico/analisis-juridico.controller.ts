@@ -24,7 +24,7 @@ import { RolUsuario, ROLES_CON_VISIBILIDAD_TOTAL_EXPEDIENTES } from '../common/e
 // Mismo criterio de tamaño/formato que la extracción de identidad de
 // clientes -- no es una subida de documento del expediente (eso sigue
 // siendo el módulo `documentos`), este análisis nunca guarda el archivo.
-const TAMANO_MAXIMO_ANALISIS_BYTES = 20 * 1024 * 1024; // 20 MB (sentencias pueden ser PDFs de varias páginas)
+const TAMANO_MAXIMO_ANALISIS_BYTES = 30 * 1024 * 1024; // 30 MB (por debajo del límite de Claude para PDFs, ~32 MB)
 const EXTENSIONES_PERMITIDAS = new Set(['.pdf', '.jpg', '.jpeg', '.png', '.webp', '.heic', '.tif', '.tiff']);
 const TIPOS_MIME_PERMITIDOS = new Set([
   'application/pdf',

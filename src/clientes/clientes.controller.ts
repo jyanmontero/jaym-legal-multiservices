@@ -25,7 +25,7 @@ import { Throttle } from '@nestjs/throttler';
 // Fotos o PDFs de cédula/pasaporte -- no es una subida de documento del
 // expediente (eso es el módulo `documentos`), por eso tiene su propia
 // validación más estrecha en vez de reusar la de DocumentosController.
-const TAMANO_MAXIMO_IDENTIDAD_BYTES = 15 * 1024 * 1024; // 15 MB
+const TAMANO_MAXIMO_IDENTIDAD_BYTES = 20 * 1024 * 1024; // 20 MB
 const EXTENSIONES_IDENTIDAD_PERMITIDAS = new Set(['.pdf', '.jpg', '.jpeg', '.png', '.webp', '.heic', '.tif', '.tiff']);
 const TIPOS_MIME_IDENTIDAD_PERMITIDOS = new Set([
   'application/pdf',

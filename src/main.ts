@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { AppModule } from './app.module.js';
+import { MulterExceptionFilter } from './common/filters/multer-exception.filter.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -15,6 +16,7 @@ async function bootstrap() {
   // Cabeceras de seguridad HTTP basicas (X-Frame-Options, X-Content-Type-Options,
   // etc.) — Fase 0 de la hoja de ruta a produccion.
   app.use(helmet());
+  app.useGlobalFilters(new MulterExceptionFilter());
   // CORS restringido al dominio real del frontend. FRONTEND_URL puede traer
   // varios origenes separados por coma (ej. produccion + staging). En
   // desarrollo, si no se define, cae de vuelta a localhost:5173.

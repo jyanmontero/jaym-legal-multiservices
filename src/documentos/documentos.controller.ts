@@ -29,7 +29,7 @@ import { Permisos } from '../auth/decorators/permisos.decorator.js';
 import { PermisosGuard } from '../auth/guards/permisos.guard.js';
 
 // Límite conservador para un despacho pequeño; ajustar según necesidad real.
-const TAMANO_MAXIMO_BYTES = 25 * 1024 * 1024; // 25 MB
+const TAMANO_MAXIMO_BYTES = 50 * 1024 * 1024; // 50 MB (expedientes judiciales suelen traer escaneos voluminosos)
 
 // Whitelist de lo que un despacho legal necesita subir de verdad: documentos
 // de oficina, imágenes de evidencia/identificación y comprimidos para
