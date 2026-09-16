@@ -73,7 +73,7 @@ const TIPOS_MIME_PERMITIDOS = new Set([
 // memoryStorage (no diskStorage): el archivo llega como buffer en memoria y
 // DocumentosService decide a dónde va (Cloudflare R2 en producción, disco
 // local en desarrollo) -- ver AlmacenamientoService.
-const opcionesMulter = {
+export const opcionesMulter = {
   storage: memoryStorage(),
   limits: { fileSize: TAMANO_MAXIMO_BYTES },
   fileFilter: (_req: unknown, file: Express.Multer.File, cb: (error: Error | null, acceptFile: boolean) => void) => {

@@ -18,6 +18,8 @@ import { GoogleCalendarModule } from './integraciones/google-calendar/google-cal
 import { AsistenteModule } from './asistente/asistente.module.js';
 import { PlantillasModule } from './plantillas/plantillas.module.js';
 import { BusquedaModule } from './busqueda/busqueda.module.js';
+import { ReportesModule } from './reportes/reportes.module.js';
+import { PortalModule } from './portal/portal.module.js';
 import { ConflictosModule } from './conflictos/conflictos.module.js';
 import { AnalisisJuridicoModule } from './analisis-juridico/analisis-juridico.module.js';
 import { RedaccionModule } from './redaccion/redaccion.module.js';
@@ -86,6 +88,8 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard.js';
     AsistenteModule,
     PlantillasModule,
     BusquedaModule,
+    ReportesModule,
+    PortalModule,
   ],
   providers: [
     // Guard global de límite de peticiones (debe ir antes que el de JWT
