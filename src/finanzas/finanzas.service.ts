@@ -6,7 +6,7 @@ import { MovimientoFinanciero } from './movimiento-financiero.entity.js';
 import { Pago } from '../facturacion/pago.entity.js';
 import { Factura } from '../facturacion/factura.entity.js';
 import { CreateCategoriaFinancieraDto, UpdateCategoriaFinancieraDto } from './dto/categoria-financiera.dto.js';
-import { CreateMovimientoFinancieroDto } from './dto/movimiento-financiero.dto.js';
+import { CreateMovimientoFinancieroDto, UpdateMovimientoFinancieroDto } from './dto/movimiento-financiero.dto.js';
 import { TipoMovimientoFinanciero } from '../common/enums/index.js';
 
 // Vista unificada que ve el front: un movimiento manual (categoriaId real,
@@ -172,6 +172,18 @@ export class FinanzasService {
       notas: dto.notas,
       registradoPorId: usuarioId,
     });
+    return this.movimientosRepo.save(movimiento);
+  }
+
+  async actualizarMovimiento(id: string, dto: UpdateMovimientoFinancieroDto) {
+    const movimiento = await this.movimientosRepo.findOneBy({ id });
+    if (!movimiento) throw new NotFoundException('Movimiento no encontrado');
+    if (dto.categoriaId !== undefined) movimiento.categoriaId = dto.categoriaId;
+    if (dto.concepto !== undefined) movimiento.concepto = dto.concepto;
+    if (dto.monto !== undefined) movimiento.monto = String(dto.monto);
+    if (dto.fecha !== undefined) movimiento.fecha = dto.fecha;
+    if (dto.metodoPago !== undefined) movimiento.metodoPago = dto.metodoPago;
+    if (dto.notas !== undefined) movimiento.notas = dto.notas;
     return this.movimientosRepo.save(movimiento);
   }
 

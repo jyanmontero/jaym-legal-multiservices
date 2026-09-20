@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { FinanzasService } from './finanzas.service.js';
 import { CreateCategoriaFinancieraDto, UpdateCategoriaFinancieraDto } from './dto/categoria-financiera.dto.js';
-import { CreateMovimientoFinancieroDto } from './dto/movimiento-financiero.dto.js';
+import { CreateMovimientoFinancieroDto, UpdateMovimientoFinancieroDto } from './dto/movimiento-financiero.dto.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 import { PermisosGuard } from '../auth/guards/permisos.guard.js';
@@ -51,6 +51,12 @@ export class FinanzasController {
   @Permisos(Permiso.FACTURAR)
   crearMovimiento(@Body() dto: CreateMovimientoFinancieroDto, @CurrentUser('sub') usuarioId: string) {
     return this.finanzasService.crearMovimiento(dto, usuarioId);
+  }
+
+  @Patch('movimientos/:id')
+  @Permisos(Permiso.FACTURAR)
+  actualizarMovimiento(@Param('id') id: string, @Body() dto: UpdateMovimientoFinancieroDto) {
+    return this.finanzasService.actualizarMovimiento(id, dto);
   }
 
   @Delete('movimientos/:id')
