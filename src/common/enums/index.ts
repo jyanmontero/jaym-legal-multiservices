@@ -272,6 +272,15 @@ export enum SeveridadAlerta {
   CRITICA = 'critica',
 }
 
+// --- Control de Gastos e Ingresos (finanzas generales de la firma --
+// nómina, alquiler, marketing, honorarios cobrados, etc. -- distinto del
+// Gasto por expediente en facturacion/gasto.entity.ts, que es el costo de
+// UN caso específico) ---
+export enum TipoMovimientoFinanciero {
+  INGRESO = 'ingreso',
+  GASTO = 'gasto',
+}
+
 // --- Facturación y Contabilidad ---
 export enum EstadoCotizacion {
   BORRADOR = 'borrador',
