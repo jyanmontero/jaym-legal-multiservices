@@ -1,14 +1,41 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository, Between, In } from 'typeorm';
 import { CategoriaFinanciera } from './categoria-financiera.entity.js';
 import { MovimientoFinanciero } from './movimiento-financiero.entity.js';
+import { Pago } from '../facturacion/pago.entity.js';
+import { Factura } from '../facturacion/factura.entity.js';
 import { CreateCategoriaFinancieraDto, UpdateCategoriaFinancieraDto } from './dto/categoria-financiera.dto.js';
 import { CreateMovimientoFinancieroDto } from './dto/movimiento-financiero.dto.js';
 import { TipoMovimientoFinanciero } from '../common/enums/index.js';
 
+// Vista unificada que ve el front: un movimiento manual (categoriaId real,
+// editable/eliminable) o un pago de factura ya cobrado (de solo lectura
+// aquí -- se corrige desde Facturas, nunca desde Control de Gastos, para no
+// tener dos lugares editando el mismo dato).
+export interface MovimientoFinancieroVista {
+  id: string;
+  tipo: TipoMovimientoFinanciero;
+  categoriaId: string | null;
+  categoriaNombre: string;
+  concepto: string;
+  monto: string;
+  fecha: string;
+  metodoPago?: string;
+  notas?: string;
+  registradoPorId?: string;
+  creadoEn: Date | string;
+  origen: 'manual' | 'factura';
+  facturaId?: string;
+  facturaNumero?: string;
+}
+
 function sumar(movimientos: MovimientoFinanciero[]): number {
   return movimientos.reduce((acc, m) => acc + Number(m.monto), 0);
+}
+
+function sumarPagos(pagos: Pago[]): number {
+  return pagos.reduce((acc, p) => acc + Number(p.monto), 0);
 }
 
 function rangoDelMes(anio: number, mes: number): { inicio: string; fin: string } {
@@ -24,6 +51,10 @@ export class FinanzasService {
     private readonly categoriasRepo: Repository<CategoriaFinanciera>,
     @InjectRepository(MovimientoFinanciero)
     private readonly movimientosRepo: Repository<MovimientoFinanciero>,
+    @InjectRepository(Pago)
+    private readonly pagosRepo: Repository<Pago>,
+    @InjectRepository(Factura)
+    private readonly facturasRepo: Repository<Factura>,
   ) {}
 
   listarCategorias(tipo?: TipoMovimientoFinanciero, incluirInactivas = false) {
@@ -54,17 +85,80 @@ export class FinanzasService {
     return this.categoriasRepo.save(categoria);
   }
 
-  listarMovimientos(filtros: {
+  // Pagos de facturas ya cobrados, vistos como ingreso -- así el usuario no
+  // tiene que volver a teclearlos a mano en Control de Gastos. Se muestran
+  // bajo una categoría fija (no editable) porque no pertenecen a ninguna
+  // fila real de categorias_financieras.
+  private async pagosComoIngresos(desde?: string, hasta?: string): Promise<MovimientoFinancieroVista[]> {
+    const pagos = await this.pagosRepo.find({
+      where: desde && hasta ? { fecha: Between(desde, hasta) } : {},
+      order: { fecha: 'DESC' },
+    });
+    if (pagos.length === 0) return [];
+
+    const facturaIds = [...new Set(pagos.map((p) => p.facturaId))];
+    const facturas = await this.facturasRepo.findBy({ id: In(facturaIds) });
+    const numeroPorFactura = new Map(facturas.map((f) => [f.id, f.numero]));
+
+    return pagos.map((p) => {
+      const numero = numeroPorFactura.get(p.facturaId);
+      return {
+        id: `pago:${p.id}`,
+        tipo: TipoMovimientoFinanciero.INGRESO,
+        categoriaId: null,
+        categoriaNombre: 'Honorarios profesionales (pago de factura)',
+        concepto: numero ? `Pago de factura ${numero}` : 'Pago de factura',
+        monto: p.monto,
+        fecha: p.fecha,
+        metodoPago: p.metodo,
+        notas: p.referencia,
+        creadoEn: p.creadoEn,
+        origen: 'factura' as const,
+        facturaId: p.facturaId,
+        facturaNumero: numero,
+      };
+    });
+  }
+
+  async listarMovimientos(filtros: {
     tipo?: TipoMovimientoFinanciero;
     categoriaId?: string;
     desde?: string;
     hasta?: string;
-  }) {
+  }): Promise<MovimientoFinancieroVista[]> {
     const where: Record<string, unknown> = {};
     if (filtros.tipo) where.tipo = filtros.tipo;
     if (filtros.categoriaId) where.categoriaId = filtros.categoriaId;
     if (filtros.desde && filtros.hasta) where.fecha = Between(filtros.desde, filtros.hasta);
-    return this.movimientosRepo.find({ where, order: { fecha: 'DESC', creadoEn: 'DESC' } });
+
+    const [manuales, categorias] = await Promise.all([
+      this.movimientosRepo.find({ where, order: { fecha: 'DESC', creadoEn: 'DESC' } }),
+      this.categoriasRepo.find(),
+    ]);
+    const nombrePorCategoria = new Map(categorias.map((c) => [c.id, c.nombre]));
+
+    const vistaManuales: MovimientoFinancieroVista[] = manuales.map((m) => ({
+      id: m.id,
+      tipo: m.tipo,
+      categoriaId: m.categoriaId,
+      categoriaNombre: nombrePorCategoria.get(m.categoriaId) ?? '—',
+      concepto: m.concepto,
+      monto: m.monto,
+      fecha: m.fecha,
+      metodoPago: m.metodoPago,
+      notas: m.notas,
+      registradoPorId: m.registradoPorId,
+      creadoEn: m.creadoEn,
+      origen: 'manual',
+    }));
+
+    // Los pagos de facturas cuentan como ingreso automáticamente, salvo que
+    // se esté pidiendo explícitamente solo gastos o solo una categoría
+    // puntual (los pagos no pertenecen a ninguna categoría editable).
+    const incluirPagos = filtros.tipo !== TipoMovimientoFinanciero.GASTO && !filtros.categoriaId;
+    const vistaPagos = incluirPagos ? await this.pagosComoIngresos(filtros.desde, filtros.hasta) : [];
+
+    return [...vistaManuales, ...vistaPagos].sort((a, b) => (a.fecha < b.fecha ? 1 : a.fecha > b.fecha ? -1 : 0));
   }
 
   async crearMovimiento(dto: CreateMovimientoFinancieroDto, usuarioId: string) {
@@ -94,9 +188,13 @@ export class FinanzasService {
     const mes = mesParam ?? ahora.getMonth() + 1;
 
     const { inicio: inicioMes, fin: finMes } = rangoDelMes(anio, mes);
-    const movimientosMes = await this.movimientosRepo.find({ where: { fecha: Between(inicioMes, finMes) } });
+    const [movimientosMes, pagosMes] = await Promise.all([
+      this.movimientosRepo.find({ where: { fecha: Between(inicioMes, finMes) } }),
+      this.pagosRepo.find({ where: { fecha: Between(inicioMes, finMes) } }),
+    ]);
 
-    const totalIngresos = sumar(movimientosMes.filter((m) => m.tipo === TipoMovimientoFinanciero.INGRESO));
+    const totalIngresos =
+      sumar(movimientosMes.filter((m) => m.tipo === TipoMovimientoFinanciero.INGRESO)) + sumarPagos(pagosMes);
     const totalGastos = sumar(movimientosMes.filter((m) => m.tipo === TipoMovimientoFinanciero.GASTO));
 
     const categorias = await this.categoriasRepo.find({ where: { activa: true } });
@@ -125,12 +223,15 @@ export class FinanzasService {
       const a = fechaRef.getFullYear();
       const m = fechaRef.getMonth() + 1;
       const { inicio, fin } = rangoDelMes(a, m);
-      const movs = await this.movimientosRepo.find({ where: { fecha: Between(inicio, fin) } });
+      const [movs, pagos] = await Promise.all([
+        this.movimientosRepo.find({ where: { fecha: Between(inicio, fin) } }),
+        this.pagosRepo.find({ where: { fecha: Between(inicio, fin) } }),
+      ]);
       tendencia.push({
         anio: a,
         mes: m,
         etiqueta: fechaRef.toLocaleDateString('es-DO', { month: 'short', year: '2-digit' }),
-        ingresos: sumar(movs.filter((x) => x.tipo === TipoMovimientoFinanciero.INGRESO)),
+        ingresos: sumar(movs.filter((x) => x.tipo === TipoMovimientoFinanciero.INGRESO)) + sumarPagos(pagos),
         gastos: sumar(movs.filter((x) => x.tipo === TipoMovimientoFinanciero.GASTO)),
       });
     }
