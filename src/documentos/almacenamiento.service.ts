@@ -76,7 +76,7 @@ export class AlmacenamientoService {
    * (en ese caso el controller sirve el archivo directamente con
    * res.download() y rutaLocal()).
    */
-  async urlDescarga(clave: string, nombreArchivo: string): Promise<string | null> {
+  async urlDescarga(clave: string, nombreArchivo: string, expiresInSegundos = 300): Promise<string | null> {
     if (!this.s3) return null;
 
     const comando = new GetObjectCommand({
@@ -85,7 +85,21 @@ export class AlmacenamientoService {
       ResponseContentDisposition: `attachment; filename="${encodeURIComponent(nombreArchivo)}"`,
     });
 
-    return getSignedUrl(this.s3, comando, { expiresIn: 300 });
+    return getSignedUrl(this.s3, comando, { expiresIn: expiresInSegundos });
+  }
+
+  /**
+   * URL firmada SIN el encabezado de descarga forzada (Content-Disposition:
+   * attachment) -- Meta (Facebook/Instagram) necesita poder leer la imagen
+   * directamente como "image/*" para procesarla, no recibir una descarga.
+   * Se usa solo para publicar en redes sociales (marketing/), nunca para
+   * documentos del despacho legal.
+   */
+  async urlLecturaPublica(clave: string, expiresInSegundos = 1800): Promise<string | null> {
+    if (!this.s3) return null;
+
+    const comando = new GetObjectCommand({ Bucket: this.bucket, Key: clave });
+    return getSignedUrl(this.s3, comando, { expiresIn: expiresInSegundos });
   }
 
   /**

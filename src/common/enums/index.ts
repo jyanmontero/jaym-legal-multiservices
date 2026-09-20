@@ -344,3 +344,15 @@ export const ROLES_QUE_APRUEBAN_PLANTILLAS = [
 // estar exentos o llevar una tasa distinta — por eso cada factura/cotización
 // permite desactivarlo (aplicaItbis: false) en vez de asumirlo siempre.
 export const TASA_ITBIS = 0.18;
+
+// --- Marketing inmobiliario (JAYM Portal Inmobiliario) — anuncios de
+// propiedades generados y publicados en Facebook/Instagram a partir de
+// fotos + datos + precio. Es un negocio distinto de JAYM Legal, así que por
+// ahora se restringe a superadministrador (ver ROLES_CON_ACCESO_MARKETING),
+// sin mezclar con los roles/permisos del despacho legal. ---
+export enum EstadoAnuncioPropiedad {
+  BORRADOR = 'borrador',
+  PUBLICADO = 'publicado',
+}
+
+export const ROLES_CON_ACCESO_MARKETING = [RolUsuario.SUPERADMINISTRADOR];
