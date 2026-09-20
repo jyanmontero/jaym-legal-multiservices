@@ -241,6 +241,16 @@ export class DocumentosService {
     return this.almacenamientoService.urlDescarga(documento.rutaAlmacenamiento, documento.nombreArchivo);
   }
 
+  /**
+   * Descarga el archivo de R2 hacia este servidor para entregárselo al
+   * navegador directamente (ver AlmacenamientoService.streamDescarga) --
+   * evita el bloqueo de CORS que ocurría al redirigir al navegador hacia
+   * la URL firmada de R2. Devuelve null si se está usando el disco local.
+   */
+  async streamDescarga(documento: Documento) {
+    return this.almacenamientoService.streamDescarga(documento.rutaAlmacenamiento);
+  }
+
   /** Solo válido cuando no se está usando R2 (ver AlmacenamientoService). */
   rutaFisica(documento: Documento): string {
     return this.almacenamientoService.rutaLocal(documento.rutaAlmacenamiento);

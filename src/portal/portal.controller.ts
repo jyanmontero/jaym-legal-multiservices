@@ -57,8 +57,20 @@ export class PortalController {
 
   @Get('documentos/:id/descargar')
   async descargarDocumento(@Param('id') id: string, @CurrentPortalUsuario('clienteId') clienteId: string, @Res() res: Response) {
-    const { documento, url } = await this.portalDatosService.descargarDocumento(clienteId, id);
-    if (url) return res.redirect(302, url);
+    const { documento, remoto } = await this.portalDatosService.descargarDocumento(clienteId, id);
+    // El servidor descarga el archivo de R2 y lo entrega directamente (en
+    // vez de redirigir el navegador del cliente hacia una URL firmada de
+    // R2), para evitar el bloqueo de CORS entre el portal y Cloudflare.
+    if (remoto) {
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${encodeURIComponent(documento.nombreArchivo)}"`,
+      );
+      if (remoto.contentType) res.setHeader('Content-Type', remoto.contentType);
+      if (remoto.contentLength) res.setHeader('Content-Length', String(remoto.contentLength));
+      remoto.body.pipe(res);
+      return;
+    }
     return res.status(404).json({ message: 'El archivo no está disponible en este momento.' });
   }
 

@@ -172,11 +172,22 @@ export class DocumentosController {
     await this.documentosService.verificarVisibilidadDocumento(documento, usuarioActual);
     await this.documentosService.verificarAcceso(documento, usuarioActual.rol, 'descargar');
 
-    // En producción (R2): redirige a una URL firmada temporal, así el
-    // archivo viaja directo desde Cloudflare al navegador sin pasar por
-    // este servidor. En desarrollo (disco local): lo sirve directamente.
-    const url = await this.documentosService.urlDescarga(documento);
-    if (url) return res.redirect(302, url);
+    // En producción (R2): el propio servidor descarga el archivo de
+    // Cloudflare y se lo entrega al navegador (en vez de redirigir a una
+    // URL firmada de R2), para que el navegador nunca tenga que hablar
+    // directamente con Cloudflare -- eso es lo que evita el bloqueo de
+    // CORS. En desarrollo (disco local): lo sirve directamente.
+    const remoto = await this.documentosService.streamDescarga(documento);
+    if (remoto) {
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${encodeURIComponent(documento.nombreArchivo)}"`,
+      );
+      if (remoto.contentType) res.setHeader('Content-Type', remoto.contentType);
+      if (remoto.contentLength) res.setHeader('Content-Length', String(remoto.contentLength));
+      remoto.body.pipe(res);
+      return;
+    }
 
     const ruta = this.documentosService.rutaFisica(documento);
     return res.download(ruta, documento.nombreArchivo);

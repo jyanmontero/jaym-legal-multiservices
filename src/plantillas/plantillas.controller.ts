@@ -175,9 +175,18 @@ export class SolicitudesDocumentoController {
     }
     const documento = await this.documentosService.obtenerPorId(solicitud.documentoGeneradoId);
 
-    const url = await this.documentosService.urlDescarga(documento);
-    if (url) {
-      res.redirect(302, url);
+    // El servidor descarga el archivo de R2 y lo entrega directamente (en
+    // vez de redirigir al navegador hacia una URL firmada de R2), para
+    // evitar el bloqueo de CORS entre el frontend y Cloudflare.
+    const remoto = await this.documentosService.streamDescarga(documento);
+    if (remoto) {
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${encodeURIComponent(documento.nombreArchivo)}"`,
+      );
+      if (remoto.contentType) res.setHeader('Content-Type', remoto.contentType);
+      if (remoto.contentLength) res.setHeader('Content-Length', String(remoto.contentLength));
+      remoto.body.pipe(res);
       return;
     }
 

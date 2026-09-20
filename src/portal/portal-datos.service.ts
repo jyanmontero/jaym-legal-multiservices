@@ -136,8 +136,8 @@ export class PortalDatosService {
     if (!propio || !documento.clienteVisible || documento.eliminadoEn) {
       throw new ForbiddenException('No tienes acceso a ese documento');
     }
-    const url = await this.documentosService.urlDescarga(documento);
-    return { documento, url };
+    const remoto = await this.documentosService.streamDescarga(documento);
+    return { documento, remoto };
   }
 
   // --- Facturas --------------------------------------------------------------

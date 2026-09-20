@@ -8,6 +8,7 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import type { Readable } from 'stream';
 
 // Carpeta usada solo como respaldo para desarrollo local, cuando no hay
 // credenciales de R2 configuradas (ver AlmacenamientoService más abajo).
@@ -85,6 +86,36 @@ export class AlmacenamientoService {
     });
 
     return getSignedUrl(this.s3, comando, { expiresIn: 300 });
+  }
+
+  /**
+   * Descarga el archivo de R2 hacia este mismo servidor y devuelve su
+   * contenido como stream, en vez de una URL firmada -- así el controller
+   * puede entregárselo al navegador directamente (mismo origen que el resto
+   * de la API), sin que el navegador tenga que hablar con Cloudflare R2.
+   *
+   * Esto evita por completo el bloqueo de CORS que ocurre cuando el
+   * navegador sigue una redirección hacia una URL firmada de R2 y el
+   * bucket no responde con el encabezado Access-Control-Allow-Origin
+   * esperado para el origen exacto del frontend (bug detectado el
+   * 19-20 de septiembre de 2026 -- ver auditoría del proyecto).
+   *
+   * Devuelve null si se está usando el disco local (en ese caso el
+   * controller sirve el archivo directamente con res.download() y
+   * rutaLocal()).
+   */
+  async streamDescarga(
+    clave: string,
+  ): Promise<{ body: Readable; contentType?: string; contentLength?: number } | null> {
+    if (!this.s3) return null;
+
+    const respuesta = await this.s3.send(new GetObjectCommand({ Bucket: this.bucket, Key: clave }));
+
+    return {
+      body: respuesta.Body as unknown as Readable,
+      contentType: respuesta.ContentType,
+      contentLength: respuesta.ContentLength,
+    };
   }
 
   /** Borra el archivo físico -- tolerante si ya no existe. */
