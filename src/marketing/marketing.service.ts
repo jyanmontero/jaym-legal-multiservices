@@ -12,6 +12,18 @@ import { CrearAnuncioDto } from './dto/crear-anuncio.dto.js';
 import { ActualizarAnuncioDto } from './dto/actualizar-anuncio.dto.js';
 import { EstadoAnuncioPropiedad } from '../common/enums/index.js';
 
+interface DatosPropiedadSugeridos {
+  titulo?: string;
+  zona?: string;
+  habitaciones?: number;
+  banos?: number;
+  metrosCuadrados?: number;
+  precio?: number;
+  moneda?: string;
+  notas?: string;
+  contacto?: string;
+}
+
 interface DatosPropiedad {
   titulo: string;
   zona?: string;
@@ -107,6 +119,88 @@ export class MarketingService {
     }
     const entrada = bloque.input as { textoAnuncio: string; mensajeWhatsapp: string };
     return entrada;
+  }
+
+  /**
+   * "Carga rápida": el usuario describe la propiedad con sus propias
+   * palabras (escribiendo o dictando por voz en el navegador) y la IA
+   * intenta extraer los campos del formulario. Es solo una sugerencia --
+   * nunca crea ni guarda nada; el usuario siempre revisa y corrige antes
+   * de generar el anuncio con el flujo normal (crear()).
+   */
+  async interpretarDescripcion(descripcion: string): Promise<DatosPropiedadSugeridos> {
+    const anthropic = this.clienteAnthropic();
+
+    const herramienta: Anthropic.Tool = {
+      name: 'registrar_datos_propiedad',
+      description: 'Registra los datos estructurados de la propiedad extraídos de la descripción libre.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          titulo: {
+            type: 'string',
+            description:
+              'Título breve y atractivo para el anuncio, ej. "Villa moderna en Los Ríos". Si la descripción no da para un título claro, propone uno breve basado en lo que sí se mencionó.',
+          },
+          zona: {
+            type: 'string',
+            description: 'Sector, ciudad o zona de la propiedad, tal como se mencionó. Omitir si no se menciona.',
+          },
+          habitaciones: {
+            type: 'integer',
+            description: 'Cantidad de habitaciones/dormitorios. Omitir si no se menciona.',
+          },
+          banos: { type: 'integer', description: 'Cantidad de baños. Omitir si no se menciona.' },
+          metrosCuadrados: { type: 'number', description: 'Tamaño en metros cuadrados. Omitir si no se menciona.' },
+          precio: {
+            type: 'number',
+            description: 'Precio como número, sin símbolo de moneda ni separadores de miles. Omitir si no se menciona.',
+          },
+          moneda: {
+            type: 'string',
+            enum: ['RD$', 'US$'],
+            description: 'RD$ por defecto, o US$ si se mencionan dólares/USD explícitamente.',
+          },
+          notas: {
+            type: 'string',
+            description:
+              'El resto de las características mencionadas que no encajan en los campos anteriores (acabados, amenidades, estado, etc.), redactado como notas breves.',
+          },
+          contacto: {
+            type: 'string',
+            description: 'Forma de contacto mencionada (teléfono, WhatsApp, nombre de agente), si se dijo alguna. Omitir si no se menciona.',
+          },
+        },
+        required: [],
+      },
+    };
+
+    const respuesta = await anthropic.messages.create({
+      model: 'claude-sonnet-5',
+      max_tokens: 1024,
+      tools: [herramienta],
+      tool_choice: { type: 'tool', name: 'registrar_datos_propiedad' },
+      messages: [
+        {
+          role: 'user',
+          content:
+            'Un agente de JAYM Portal Inmobiliario (República Dominicana) describió una propiedad con sus propias palabras, ' +
+            'posiblemente dictada por voz mientras estaba en la propiedad. Extrae los datos estructurados que realmente se ' +
+            'mencionan. No inventes ni asumas nada que no esté dicho -- si un dato no se menciona, omite ese campo por completo.\n\n' +
+            `Descripción: "${descripcion}"`,
+        },
+      ],
+    });
+
+    const bloque = respuesta.content.find(
+      (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === 'registrar_datos_propiedad',
+    );
+    if (!bloque) {
+      throw new BadRequestException(
+        'La IA no pudo interpretar la descripción. Intenta de nuevo o completa el formulario a mano.',
+      );
+    }
+    return bloque.input as DatosPropiedadSugeridos;
   }
 
   async crear(dto: CrearAnuncioDto, fotos: Express.Multer.File[], usuarioId: string): Promise<AnuncioPropiedad> {

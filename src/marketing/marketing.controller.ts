@@ -18,6 +18,7 @@ import { BadRequestException } from '@nestjs/common';
 import { MarketingService } from './marketing.service.js';
 import { CrearAnuncioDto } from './dto/crear-anuncio.dto.js';
 import { ActualizarAnuncioDto } from './dto/actualizar-anuncio.dto.js';
+import { InterpretarDescripcionDto } from './dto/interpretar-descripcion.dto.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
@@ -52,6 +53,13 @@ export class MarketingController {
   @Get('meta/estado')
   estadoMeta() {
     return { credencialesConfiguradas: this.marketingService.credencialesMetaConfiguradas() };
+  }
+
+  // "Carga rápida": solo interpreta texto libre (escrito o dictado por voz
+  // en el navegador) y devuelve una sugerencia de campos -- no crea nada.
+  @Post('anuncios/interpretar')
+  interpretar(@Body() dto: InterpretarDescripcionDto) {
+    return this.marketingService.interpretarDescripcion(dto.descripcion);
   }
 
   @Post('anuncios')
