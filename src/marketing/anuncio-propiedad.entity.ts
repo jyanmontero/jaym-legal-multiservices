@@ -67,6 +67,12 @@ export class AnuncioPropiedad {
   @Column({ nullable: true })
   instagramMediaId?: string;
 
+  @Column({ type: 'int', nullable: true })
+  wordpressPostId?: number;
+
+  @Column({ nullable: true })
+  wordpressEnlace?: string;
+
   @Column({ type: 'timestamptz', nullable: true })
   publicadoEn?: Date;
 

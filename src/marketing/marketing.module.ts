@@ -4,6 +4,7 @@ import { AnuncioPropiedad } from './anuncio-propiedad.entity.js';
 import { MarketingService } from './marketing.service.js';
 import { MarketingController } from './marketing.controller.js';
 import { MetaGraphService } from './meta-graph.service.js';
+import { WordpressPortalService } from './wordpress-portal.service.js';
 import { DocumentosModule } from '../documentos/documentos.module.js';
 
 @Module({
@@ -11,7 +12,7 @@ import { DocumentosModule } from '../documentos/documentos.module.js';
   // aquí para las fotos de propiedades.
   imports: [TypeOrmModule.forFeature([AnuncioPropiedad]), DocumentosModule],
   controllers: [MarketingController],
-  providers: [MarketingService, MetaGraphService],
+  providers: [MarketingService, MetaGraphService, WordpressPortalService],
   exports: [MarketingService],
 })
 export class MarketingModule {}

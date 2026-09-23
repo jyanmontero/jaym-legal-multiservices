@@ -8,6 +8,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { AnuncioPropiedad } from './anuncio-propiedad.entity.js';
 import { AlmacenamientoService } from '../documentos/almacenamiento.service.js';
 import { MetaGraphService } from './meta-graph.service.js';
+import { WordpressPortalService } from './wordpress-portal.service.js';
 import { CrearAnuncioDto } from './dto/crear-anuncio.dto.js';
 import { ActualizarAnuncioDto } from './dto/actualizar-anuncio.dto.js';
 import { EstadoAnuncioPropiedad } from '../common/enums/index.js';
@@ -44,6 +45,7 @@ export class MarketingService {
     private readonly config: ConfigService,
     private readonly almacenamiento: AlmacenamientoService,
     private readonly metaGraph: MetaGraphService,
+    private readonly wordpressPortal: WordpressPortalService,
   ) {}
 
   private clienteAnthropic(): Anthropic {
@@ -360,6 +362,101 @@ export class MarketingService {
     anuncio.instagramMediaId = instagramMediaId;
     anuncio.estado = EstadoAnuncioPropiedad.PUBLICADO;
     anuncio.publicadoEn = new Date();
+    return this.repo.save(anuncio);
+  }
+
+  credencialesPortalConfiguradas(): boolean {
+    return this.wordpressPortal.credencialesConfiguradas();
+  }
+
+  /**
+   * Publica (o actualiza) el anuncio como una ficha real en JAYM Portal
+   * Inmobiliario (jaymportalinmobiliario.com). Es independiente de
+   * publicar() (Meta) -- un anuncio puede publicarse en el portal, en redes,
+   * en ambos o en ninguno, en el orden que Joseph prefiera.
+   *
+   * Limitación conocida: WP Residence no expone por REST los campos propios
+   * de la ficha (precio/habitaciones/baños/metros/dirección como campos
+   * estructurados) a menos que se registren con `register_post_meta` en el
+   * tema hijo -- ver comentario en wordpress-portal.service.ts. Mientras
+   * tanto, esos datos siempre se incluyen en el texto de la ficha para que
+   * nunca quede incompleta de cara al público.
+   */
+  async publicarEnPortal(id: string): Promise<AnuncioPropiedad> {
+    const anuncio = await this.obtener(id);
+    if (anuncio.fotosClaves.length === 0) {
+      throw new BadRequestException('El anuncio no tiene fotos.');
+    }
+
+    // El modelo del anuncio (pensado originalmente solo para Meta) no
+    // distingue venta/renta -- se infiere de las notas/título con una
+    // heurística simple. Si Joseph nota que queda mal clasificado, puede
+    // agregarlo a las notas explícitamente ("en renta"/"en alquiler").
+    const textoBusquedaTipo = `${anuncio.titulo} ${anuncio.notas ?? ''}`.toLowerCase();
+    const esRenta = /\balquiler|\brenta\b|\ben renta\b|\bfor rent\b/.test(textoBusquedaTipo);
+    const idAccion = await this.wordpressPortal.buscarOCrearTermino(
+      'property_action_category',
+      esRenta ? 'En Renta' : 'En Venta',
+    );
+
+    const idCategoriaZona = anuncio.zona
+      ? await this.wordpressPortal.buscarOCrearTermino('property_city', anuncio.zona)
+      : undefined;
+
+    const idsFotos: number[] = [];
+    for (let i = 0; i < anuncio.fotosClaves.length; i++) {
+      const clave = anuncio.fotosClaves[i];
+      const url = await this.almacenamiento.urlLecturaPublica(clave, 1800);
+      if (!url) {
+        throw new BadRequestException(
+          'El almacenamiento de fotos no está configurado para producción (falta R2) -- no se puede publicar en el portal.',
+        );
+      }
+      const nombreArchivo = clave.split('/').pop() ?? `foto-${i + 1}.jpg`;
+      const tipoMime = nombreArchivo.toLowerCase().endsWith('.png')
+        ? 'image/png'
+        : nombreArchivo.toLowerCase().endsWith('.webp')
+          ? 'image/webp'
+          : 'image/jpeg';
+      const idMedia = await this.wordpressPortal.subirFoto(url, nombreArchivo, tipoMime);
+      idsFotos.push(idMedia);
+    }
+
+    const precioFormateado = `${anuncio.moneda}${Number(anuncio.precio).toLocaleString('es-DO')}`;
+    const detalles = [
+      `<strong>Precio:</strong> ${precioFormateado}`,
+      anuncio.zona && `<strong>Zona:</strong> ${anuncio.zona}`,
+      anuncio.habitaciones != null && `<strong>Habitaciones:</strong> ${anuncio.habitaciones}`,
+      anuncio.banos != null && `<strong>Baños:</strong> ${anuncio.banos}`,
+      anuncio.metrosCuadrados != null && `<strong>Metros cuadrados:</strong> ${anuncio.metrosCuadrados} m²`,
+      anuncio.contacto && `<strong>Contacto:</strong> ${anuncio.contacto}`,
+    ]
+      .filter(Boolean)
+      .join('<br>');
+    const contenidoHtml = [
+      anuncio.textoAnuncio ? `<p>${anuncio.textoAnuncio.replace(/\n/g, '<br>')}</p>` : '',
+      `<p>${detalles}</p>`,
+      anuncio.notas ? `<p>${anuncio.notas.replace(/\n/g, '<br>')}</p>` : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    const resultado = await this.wordpressPortal.publicarPropiedad({
+      postIdExistente: anuncio.wordpressPostId,
+      titulo: anuncio.titulo,
+      contenidoHtml,
+      idsFotos,
+      idCategoriaZona,
+      idAccion,
+      precio: Number(anuncio.precio),
+      habitaciones: anuncio.habitaciones,
+      banos: anuncio.banos,
+      metrosCuadrados: anuncio.metrosCuadrados != null ? Number(anuncio.metrosCuadrados) : undefined,
+      direccion: anuncio.zona,
+    });
+
+    anuncio.wordpressPostId = resultado.id;
+    anuncio.wordpressEnlace = resultado.enlace;
     return this.repo.save(anuncio);
   }
 }

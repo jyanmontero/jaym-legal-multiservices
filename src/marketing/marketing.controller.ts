@@ -55,6 +55,11 @@ export class MarketingController {
     return { credencialesConfiguradas: this.marketingService.credencialesMetaConfiguradas() };
   }
 
+  @Get('portal/estado')
+  estadoPortal() {
+    return { credencialesConfiguradas: this.marketingService.credencialesPortalConfiguradas() };
+  }
+
   // "Carga rápida": solo interpreta texto libre (escrito o dictado por voz
   // en el navegador) y devuelve una sugerencia de campos -- no crea nada.
   @Post('anuncios/interpretar')
@@ -100,6 +105,11 @@ export class MarketingController {
   @Post('anuncios/:id/publicar')
   publicar(@Param('id') id: string) {
     return this.marketingService.publicar(id);
+  }
+
+  @Post('anuncios/:id/publicar-portal')
+  publicarPortal(@Param('id') id: string) {
+    return this.marketingService.publicarEnPortal(id);
   }
 
   @Delete('anuncios/:id')
