@@ -12,7 +12,7 @@ import { CrearAnuncioDto } from './dto/crear-anuncio.dto.js';
 import { ActualizarAnuncioDto } from './dto/actualizar-anuncio.dto.js';
 import { EstadoAnuncioPropiedad } from '../common/enums/index.js';
 
-interface DatosPropiedadSugeridos {
+export interface DatosPropiedadSugeridos {
   titulo?: string;
   zona?: string;
   habitaciones?: number;
