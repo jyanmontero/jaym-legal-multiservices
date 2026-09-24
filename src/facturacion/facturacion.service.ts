@@ -108,6 +108,31 @@ export class FacturacionService {
     const aplicaItbisGeneral = dto.aplicaItbis ?? true;
     const totales = calcularTotales(dto.items, aplicaItbisGeneral, dto.descuento);
     const costoEnvio = dto.costoEnvio ?? 0;
+    const totalFinal = (Number(totales.total) + costoEnvio).toFixed(2);
+
+    // Resguardo contra doble envío (doble clic, o reintento porque el
+    // backend tardó en responder, ej. Render "despertando"): si el mismo
+    // usuario ya creó, hace unos segundos, una cotización idéntica para el
+    // mismo cliente/concepto/monto, se devuelve esa en vez de crear otra.
+    // No afecta el botón "Duplicar" (usa duplicarCotizacion, no este método)
+    // ni a dos cotizaciones legítimas distintas -- la ventana es de segundos.
+    const posibleDobleEnvio = await this.cotizacionRepo.findOne({
+      where: {
+        clienteId,
+        concepto: datosCotizacion.concepto,
+        total: totalFinal,
+        creadoPorId: usuarioId,
+      },
+      order: { creadoEn: 'DESC' },
+    });
+    if (posibleDobleEnvio) {
+      const segundosDesdeCreacion =
+        (Date.now() - new Date(posibleDobleEnvio.creadoEn).getTime()) / 1000;
+      if (segundosDesdeCreacion < 10) {
+        return posibleDobleEnvio;
+      }
+    }
+
     const numero = await this.generarNumero('COT', this.cotizacionRepo);
 
     const cotizacion = this.cotizacionRepo.create({
@@ -119,7 +144,7 @@ export class FacturacionService {
       itbis: totales.itbis,
       aplicaItbis: totales.aplicaItbis,
       costoEnvio: costoEnvio.toFixed(2),
-      total: (Number(totales.total) + costoEnvio).toFixed(2),
+      total: totalFinal,
       creadoPorId: usuarioId,
     });
     return this.cotizacionRepo.save(cotizacion);
