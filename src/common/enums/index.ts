@@ -356,3 +356,12 @@ export enum EstadoAnuncioPropiedad {
 }
 
 export const ROLES_CON_ACCESO_MARKETING = [RolUsuario.SUPERADMINISTRADOR];
+
+// --- Portal de Colaboradores — abogados externos/corresponsales y personal
+// de apoyo interno SIN cuenta completa de Usuario. Es una identidad propia
+// (tabla `colaboradores`, login y JWT separados -- ver módulo colaboradores/),
+// deliberadamente distinta de RolUsuario: nunca hereda permisos internos.
+export enum TipoColaborador {
+  EXTERNO = 'externo', // abogado externo o corresponsal de otra firma
+  INTERNO = 'interno', // personal de apoyo interno sin cuenta completa (ej. mensajero, gestor de trámites)
+}

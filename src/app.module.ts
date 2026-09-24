@@ -20,6 +20,8 @@ import { PlantillasModule } from './plantillas/plantillas.module.js';
 import { BusquedaModule } from './busqueda/busqueda.module.js';
 import { ReportesModule } from './reportes/reportes.module.js';
 import { PortalModule } from './portal/portal.module.js';
+import { ColaboradoresModule } from './colaboradores/colaboradores.module.js';
+import { ContactoWebModule } from './contacto-web/contacto-web.module.js';
 import { FinanzasModule } from './finanzas/finanzas.module.js';
 import { ConflictosModule } from './conflictos/conflictos.module.js';
 import { AnalisisJuridicoModule } from './analisis-juridico/analisis-juridico.module.js';
@@ -93,6 +95,8 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard.js';
     BusquedaModule,
     ReportesModule,
     PortalModule,
+    ColaboradoresModule,
+    ContactoWebModule,
     FinanzasModule,
   ],
   providers: [
