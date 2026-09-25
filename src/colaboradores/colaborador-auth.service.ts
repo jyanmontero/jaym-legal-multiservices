@@ -23,6 +23,7 @@ export interface JwtPayloadColaborador {
   correo: string;
   tipoColaborador: TipoColaborador; // externo | interno -- nunca confundir con el discriminador de abajo
   tipo: 'colaborador'; // discriminador de sesión, igual criterio que JwtPayloadPortal.tipo === 'portal'
+  tokenVersion: number; // ver ColaboradorAuthGuard -- permite revocar sesiones antes de que expire el JWT
 }
 
 @Injectable()
@@ -71,6 +72,7 @@ export class ColaboradorAuthService {
       correo: cuenta.correo,
       tipoColaborador: cuenta.tipo,
       tipo: 'colaborador',
+      tokenVersion: cuenta.tokenVersion,
     };
     return {
       accessToken: await this.jwtService.signAsync(payload),
@@ -90,8 +92,20 @@ export class ColaboradorAuthService {
     const valido = await bcrypt.compare(actual, cuenta.passwordHash);
     if (!valido) throw new UnauthorizedException('La contraseña actual no es correcta');
     const passwordHash = await bcrypt.hash(nueva, 12);
-    await this.colaboradorRepo.update(cuenta.id, { passwordHash, debeCambiarPassword: false });
-    return { actualizado: true };
+    // Incrementa tokenVersion para invalidar de inmediato el JWT con el que
+    // se llamó a este mismo endpoint, y firma uno nuevo para que el
+    // colaborador no quede desconectado justo después de cambiar su clave.
+    const tokenVersion = cuenta.tokenVersion + 1;
+    await this.colaboradorRepo.update(cuenta.id, { passwordHash, debeCambiarPassword: false, tokenVersion });
+
+    const payload: JwtPayloadColaborador = {
+      sub: cuenta.id,
+      correo: cuenta.correo,
+      tipoColaborador: cuenta.tipo,
+      tipo: 'colaborador',
+      tokenVersion,
+    };
+    return { actualizado: true, accessToken: await this.jwtService.signAsync(payload) };
   }
 
   async solicitarReset(correo: string): Promise<{ mensaje: string }> {
@@ -122,12 +136,16 @@ export class ColaboradorAuthService {
     const enlaceInvalido = new BadRequestException('Este enlace no es válido o ya expiró. Solicita uno nuevo.');
     if (!registro || registro.usadoEn || registro.expiraEn < new Date()) throw enlaceInvalido;
 
+    const cuenta = await this.colaboradorRepo.findOne({ where: { id: registro.colaboradorId } });
     const passwordHash = await bcrypt.hash(nuevaPassword, 12);
     await this.colaboradorRepo.update(registro.colaboradorId, {
       passwordHash,
       debeCambiarPassword: false,
       intentosFallidosLogin: 0,
       bloqueadoHastaLogin: undefined,
+      // Invalida cualquier sesión que quedara abierta con la contraseña
+      // anterior -- mismo razonamiento que en cambiarPassword().
+      tokenVersion: (cuenta?.tokenVersion ?? 0) + 1,
     });
     await this.resetTokenRepo.update({ colaboradorId: registro.colaboradorId, usadoEn: IsNull() }, { usadoEn: new Date() });
     return { actualizado: true };

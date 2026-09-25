@@ -10,6 +10,7 @@ import {
 import { Public } from '../auth/decorators/public.decorator.js';
 import { ColaboradorAuthGuard } from './colaborador-auth.guard.js';
 import { CurrentColaborador } from './current-colaborador.decorator.js';
+import { PermitirPasswordPendiente } from './permitir-password-pendiente.decorator.js';
 
 @Controller('colaboradores/auth')
 export class ColaboradorAuthController {
@@ -36,6 +37,7 @@ export class ColaboradorAuthController {
   }
 
   @UseGuards(ColaboradorAuthGuard)
+  @PermitirPasswordPendiente()
   @Post('cambiar-password')
   cambiarPassword(@Body() dto: CambiarPasswordColaboradorDto, @CurrentColaborador('sub') colaboradorId: string) {
     return this.colaboradorAuthService.cambiarPassword(colaboradorId, dto.actual, dto.nueva);

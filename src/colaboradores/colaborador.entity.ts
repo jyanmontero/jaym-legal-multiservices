@@ -57,6 +57,16 @@ export class Colaborador {
   @Column({ default: true })
   debeCambiarPassword: boolean;
 
+  // Se incrementa cada vez que cambia la contraseña (propia o por reseteo
+  // administrativo) o cuando se desactiva/reactiva la cuenta. ColaboradorAuthGuard
+  // compara este valor contra el que quedó grabado en el JWT al emitirlo: si
+  // no coincide, el token es de una sesión anterior y se rechaza. Sin esto,
+  // un JWT ya emitido (vigente hasta 14 días) seguía siendo válido aunque se
+  // desactivara al colaborador o se le reseteara la contraseña -- ver
+  // resolución del 26/09/2026.
+  @Column({ type: 'int', default: 0 })
+  tokenVersion: number;
+
   @Column({ type: 'timestamp', nullable: true })
   ultimoAcceso?: Date;
 

@@ -76,14 +76,24 @@ export class ColaboradoresAdminService {
     const cuenta = await this.obtenerPorId(id);
     const passwordTemporal = generarPasswordTemporal();
     const passwordHash = await bcrypt.hash(passwordTemporal, 12);
-    await this.colaboradorRepo.update(id, { passwordHash, debeCambiarPassword: true, activo: true });
+    // tokenVersion + 1 invalida de inmediato cualquier sesión que quedara
+    // abierta con la contraseña anterior -- ver ColaboradorAuthGuard.
+    await this.colaboradorRepo.update(id, {
+      passwordHash,
+      debeCambiarPassword: true,
+      activo: true,
+      tokenVersion: cuenta.tokenVersion + 1,
+    });
     const enviado = await this.enviarInvitacion(cuenta, passwordTemporal);
     return { enviado };
   }
 
   async cambiarActivo(id: string, activo: boolean) {
-    await this.obtenerPorId(id);
-    await this.colaboradorRepo.update(id, { activo });
+    const cuenta = await this.obtenerPorId(id);
+    // tokenVersion + 1 asegura que desactivar (o reactivar) una cuenta corta
+    // de inmediato cualquier sesión con un JWT ya emitido, en vez de esperar
+    // hasta 14 días a que venza por su cuenta.
+    await this.colaboradorRepo.update(id, { activo, tokenVersion: cuenta.tokenVersion + 1 });
     return { actualizado: true };
   }
 
