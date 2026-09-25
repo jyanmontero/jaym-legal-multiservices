@@ -376,11 +376,18 @@ export class MarketingService {
    * en ambos o en ninguno, en el orden que Joseph prefiera.
    *
    * Limitación conocida: WP Residence no expone por REST los campos propios
-   * de la ficha (precio/habitaciones/baños/metros/dirección como campos
-   * estructurados) a menos que se registren con `register_post_meta` en el
-   * tema hijo -- ver comentario en wordpress-portal.service.ts. Mientras
-   * tanto, esos datos siempre se incluyen en el texto de la ficha para que
-   * nunca quede incompleta de cara al público.
+   * de la ficha (precio/habitaciones/baños/metros/dirección/latitud/longitud
+   * como campos estructurados) a menos que se registren con
+   * `register_post_meta` en el tema hijo -- ver comentario en
+   * wordpress-portal.service.ts. Mientras tanto, esos datos siempre se
+   * incluyen en el texto de la ficha para que nunca quede incompleta de cara
+   * al público.
+   *
+   * Auditoría 2026-09-25: se agregó aquí (a) inferencia de la categoría del
+   * inmueble (property_category) con la misma heurística de texto que ya se
+   * usaba para venta/renta, y (b) geocodificación de la zona para que el
+   * mapa muestre la ubicación real. El adjuntar todas las fotos a la galería
+   * (no solo la destacada) se resolvió dentro de publicarPropiedad().
    */
   async publicarEnPortal(id: string): Promise<AnuncioPropiedad> {
     const anuncio = await this.obtener(id);
@@ -402,6 +409,32 @@ export class MarketingService {
     const idCategoriaZona = anuncio.zona
       ? await this.wordpressPortal.buscarOCrearTermino('property_city', anuncio.zona)
       : undefined;
+
+    // Categoría del inmueble (Casa/Apartamento/Condominio/Comercial) -- el
+    // modelo tampoco distingue esto explícitamente, así que se infiere con
+    // la misma heurística de texto que ya se usa para venta/renta arriba.
+    // Los nombres deben coincidir exactamente con los términos reales que ya
+    // existen en la taxonomía property_category del portal (confirmado por
+    // consulta directa a /wp-json/wp/v2/property_category) para no crear
+    // categorías duplicadas.
+    let nombreCategoriaPropiedad = 'Casa unifamiliar';
+    if (/\bapartamentos?\b|\baptos?\b/.test(textoBusquedaTipo)) {
+      nombreCategoriaPropiedad = 'Apartamentos';
+    } else if (/\bcondominios?\b|\bcondo\b/.test(textoBusquedaTipo)) {
+      nombreCategoriaPropiedad = 'Condominios';
+    } else if (/\bcomercial\b|\blocal comercial\b|\boficina\b|\bnegocio\b/.test(textoBusquedaTipo)) {
+      nombreCategoriaPropiedad = 'Comercial';
+    }
+    const idCategoriaPropiedad = await this.wordpressPortal.buscarOCrearTermino(
+      'property_category',
+      nombreCategoriaPropiedad,
+    );
+
+    // Geocodificación (Nominatim/OpenStreetMap, gratis) -- resuelve la zona a
+    // coordenadas reales para que el mapa de la ficha no muestre el demo del
+    // tema (Denver, CO). Si no hay zona o el servicio falla, sigue sin
+    // coordenadas nuevas -- nunca bloquea la publicación.
+    const geo = anuncio.zona ? await this.wordpressPortal.geocodificarDireccion(anuncio.zona) : null;
 
     const idsFotos: number[] = [];
     for (let i = 0; i < anuncio.fotosClaves.length; i++) {
@@ -447,12 +480,15 @@ export class MarketingService {
       contenidoHtml,
       idsFotos,
       idCategoriaZona,
+      idCategoriaPropiedad,
       idAccion,
       precio: Number(anuncio.precio),
       habitaciones: anuncio.habitaciones,
       banos: anuncio.banos,
       metrosCuadrados: anuncio.metrosCuadrados != null ? Number(anuncio.metrosCuadrados) : undefined,
       direccion: anuncio.zona,
+      latitud: geo?.lat,
+      longitud: geo?.lon,
     });
 
     anuncio.wordpressPostId = resultado.id;

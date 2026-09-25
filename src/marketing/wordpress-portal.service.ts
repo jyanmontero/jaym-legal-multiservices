@@ -20,17 +20,24 @@ interface TerminoWp {
  *
  * Importante -- limitación conocida del tema: WP Residence no expone por
  * REST los campos propios de la ficha (precio, habitaciones, baños, metros,
- * dirección como campos numéricos/estructurados: property_price,
- * property_bedrooms, property_bathrooms, property_size, property_address).
- * Este servicio los envía de todas formas en `meta` (WordPress simplemente
- * los ignora si no están registrados para REST), y además los incluye
- * siempre en el texto/contenido del anuncio para que la ficha nunca quede
- * incompleta de cara al público. Para que también aparezcan como campos
- * estructurados del tema (con precio destacado, filtros de búsqueda, etc.)
- * hace falta agregar un pequeño fragmento de código en el tema hijo
- * (functions.php) que los registre con `register_post_meta` -- no es algo
- * que se pueda hacer vía REST, por lo que queda documentado en el README
- * del módulo para que Joseph lo agregue desde el editor de temas.
+ * dirección, latitud/longitud como campos numéricos/estructurados:
+ * property_price, property_bedrooms, property_bathrooms, property_size,
+ * property_address, property_latitude, property_longitude). Este servicio
+ * los envía de todas formas en `meta` (WordPress simplemente los ignora si
+ * no están registrados para REST), y además los incluye siempre en el
+ * texto/contenido del anuncio para que la ficha nunca quede incompleta de
+ * cara al público. Para que también aparezcan como campos estructurados del
+ * tema (con precio destacado, filtros de búsqueda, mapa con la ubicación
+ * real, etc.) hace falta agregar un pequeño fragmento de código en el tema
+ * hijo (functions.php) que los registre con `register_post_meta` -- no es
+ * algo que se pueda hacer vía REST, por lo que queda documentado en el
+ * README del módulo para que Joseph lo agregue desde el editor de temas.
+ *
+ * Auditoría 2026-09-25 (ver claude/auditoria-portal-inmobiliario-2026-09-25.md):
+ * esta versión agrega (1) geocodificación gratuita vía Nominatim/OpenStreetMap
+ * para que el mapa muestre la dirección real en vez del demo de Denver, CO,
+ * y (2) el adjuntar todas las fotos a la ficha (no solo la destacada) para
+ * que aparezcan en la galería pública.
  */
 @Injectable()
 export class WordpressPortalService {
@@ -128,6 +135,56 @@ export class WordpressPortalService {
   }
 
   /**
+   * Geocodifica una dirección/zona con Nominatim (OpenStreetMap) -- el mismo
+   * proveedor de mapas que ya usa el tema (Leaflet, ver pie del mapa en la
+   * ficha pública). Gratis, sin API key, solo requiere un User-Agent
+   * descriptivo según su política de uso. Devuelve `null` si no encuentra
+   * resultados o si el servicio falla -- nunca debe bloquear la publicación
+   * del anuncio, el mapa simplemente se queda sin coordenadas nuevas.
+   */
+  async geocodificarDireccion(direccion: string): Promise<{ lat: number; lon: number } | null> {
+    try {
+      const consulta = encodeURIComponent(`${direccion}, República Dominicana`);
+      const respuesta = await fetch(`https://nominatim.openstreetmap.org/search?q=${consulta}&format=json&limit=1`, {
+        headers: {
+          'User-Agent': 'JAYM-Portal-Inmobiliario/1.0 (contacto: jyanmontero@gmail.com)',
+        },
+      });
+      if (!respuesta.ok) return null;
+      const resultados = (await respuesta.json()) as Array<{ lat: string; lon: string }>;
+      if (!resultados.length) return null;
+      const lat = parseFloat(resultados[0].lat);
+      const lon = parseFloat(resultados[0].lon);
+      if (Number.isNaN(lat) || Number.isNaN(lon)) return null;
+      return { lat, lon };
+    } catch (error) {
+      this.logger.warn(`Geocodificación falló para "${direccion}": ${(error as Error).message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Asocia una foto ya subida a la biblioteca de medios (`post_parent`) con
+   * la ficha de la propiedad, para que aparezca en su galería pública en vez
+   * de quedar huérfana en la biblioteca. No lanza error si falla una foto
+   * individual -- se registra en el log y se sigue con el resto, para no
+   * arriesgar toda la publicación por una sola foto.
+   */
+  private async adjuntarFotoAPropiedad(idFoto: number, idPropiedad: number): Promise<void> {
+    const respuesta = await fetch(`${this.siteUrl()}/wp-json/wp/v2/media/${idFoto}`, {
+      method: 'POST',
+      headers: { Authorization: this.cabeceraAuth(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ post: idPropiedad }),
+    });
+    if (!respuesta.ok) {
+      const datos = (await respuesta.json().catch(() => ({}))) as { message?: string };
+      this.logger.error(
+        `No se pudo adjuntar la foto ${idFoto} a la propiedad ${idPropiedad}: ${JSON.stringify(datos)}`,
+      );
+    }
+  }
+
+  /**
    * Publica (o actualiza si ya existe) el `estate_property`. Devuelve el ID
    * del post en WordPress y el enlace público.
    */
@@ -137,12 +194,15 @@ export class WordpressPortalService {
     contenidoHtml: string;
     idsFotos: number[];
     idCategoriaZona?: number;
+    idCategoriaPropiedad?: number; // property_category: Casa/Apartamento/Condominio/Comercial
     idAccion: number; // property_action_category: En Venta / En Renta
     precio: number;
     habitaciones?: number;
     banos?: number;
     metrosCuadrados?: number;
     direccion?: string;
+    latitud?: number;
+    longitud?: number;
   }): Promise<{ id: number; enlace: string }> {
     const cuerpo: Record<string, unknown> = {
       title: datos.titulo,
@@ -158,10 +218,15 @@ export class WordpressPortalService {
         ...(datos.banos != null ? { property_bathrooms: datos.banos } : {}),
         ...(datos.metrosCuadrados != null ? { property_size: datos.metrosCuadrados } : {}),
         ...(datos.direccion ? { property_address: datos.direccion } : {}),
+        ...(datos.latitud != null ? { property_latitude: datos.latitud } : {}),
+        ...(datos.longitud != null ? { property_longitude: datos.longitud } : {}),
       },
     };
     if (datos.idCategoriaZona) {
       cuerpo.property_city = [datos.idCategoriaZona];
+    }
+    if (datos.idCategoriaPropiedad) {
+      cuerpo.property_category = [datos.idCategoriaPropiedad];
     }
     if (datos.idsFotos.length > 0) {
       cuerpo.featured_media = datos.idsFotos[0];
@@ -181,6 +246,13 @@ export class WordpressPortalService {
       this.logger.error(`Publicación en WordPress falló: ${JSON.stringify(creado)}`);
       throw new BadRequestException(`WordPress rechazó la publicación: ${creado.message ?? 'error desconocido'}`);
     }
+
+    // Adjuntar todas las fotos subidas a la ficha (no solo la destacada) para
+    // que aparezcan en la galería pública -- ver comentario del método.
+    if (datos.idsFotos.length > 0) {
+      await Promise.all(datos.idsFotos.map((idFoto) => this.adjuntarFotoAPropiedad(idFoto, creado.id!)));
+    }
+
     return { id: creado.id, enlace: creado.link ?? '' };
   }
 }
