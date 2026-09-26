@@ -27,6 +27,7 @@ import { ConflictosModule } from './conflictos/conflictos.module.js';
 import { AnalisisJuridicoModule } from './analisis-juridico/analisis-juridico.module.js';
 import { RedaccionModule } from './redaccion/redaccion.module.js';
 import { MarketingModule } from './marketing/marketing.module.js';
+import { BlogModule } from './blog/blog.module.js';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard.js';
@@ -88,6 +89,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard.js';
     AnalisisJuridicoModule,
     RedaccionModule,
     MarketingModule,
+    BlogModule,
     HubSpotModule,
     GoogleCalendarModule,
     AsistenteModule,

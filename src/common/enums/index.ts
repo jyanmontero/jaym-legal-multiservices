@@ -357,6 +357,18 @@ export enum EstadoAnuncioPropiedad {
 
 export const ROLES_CON_ACCESO_MARKETING = [RolUsuario.SUPERADMINISTRADOR];
 
+// --- Blog de JAYM Legal (jaymlegalmultiservices.com) — a diferencia del
+// marketing inmobiliario, esto SÍ es contenido del despacho legal, así que
+// se permite tanto al superadministrador como al abogado administrador. ---
+export enum EstadoBlogPost {
+  BORRADOR = 'borrador',
+  PROGRAMADO = 'programado',
+  PUBLICADO = 'publicado',
+  FALLIDO = 'fallido',
+}
+
+export const ROLES_CON_ACCESO_BLOG = [RolUsuario.SUPERADMINISTRADOR, RolUsuario.ABOGADO_ADMINISTRADOR];
+
 // --- Portal de Colaboradores — abogados externos/corresponsales y personal
 // de apoyo interno SIN cuenta completa de Usuario. Es una identidad propia
 // (tabla `colaboradores`, login y JWT separados -- ver módulo colaboradores/),
