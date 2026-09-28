@@ -5,6 +5,7 @@ import { BlogPost } from './blog-post.entity.js';
 import { AlmacenamientoService } from '../documentos/almacenamiento.service.js';
 import { RedaccionBlogService } from './redaccion-blog.service.js';
 import { WordpressBlogService } from './wordpress-blog.service.js';
+import { construirHtmlWordpress } from './plantilla-articulo-blog.js';
 import { CrearBlogPostDto } from './dto/crear-blog-post.dto.js';
 import { ActualizarBlogPostDto } from './dto/actualizar-blog-post.dto.js';
 import { GenerarBorradorBlogDto } from './dto/generar-borrador-blog.dto.js';
@@ -209,7 +210,11 @@ export class BlogService {
     const resultado = await this.wordpressBlog.publicarPost({
       postIdExistente: post.wordpressPostId,
       titulo: post.titulo,
-      contenidoHtml: post.contenidoHtml,
+      contenidoHtml: construirHtmlWordpress({
+        contenidoHtml: post.contenidoHtml,
+        extracto: post.extracto,
+        areaPractica: post.areaPractica,
+      }),
       extracto: post.extracto,
       idCategoria,
       idImagenDestacada,

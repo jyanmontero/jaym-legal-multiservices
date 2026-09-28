@@ -82,12 +82,15 @@ export class RedaccionBlogService {
           (areaTexto ? `El artículo debe ser sobre ${areaTexto}. ` : '') +
           'Estructura el artículo con encabezados claros (usa <h2> para las secciones principales), párrafos cortos, y cuando aplique una lista de requisitos o pasos usa <ul>/<ol>. ' +
           'Incluye, cuando sea natural, la ubicación "La Romana" y/o "República Dominicana" para posicionamiento local, y cierra con un párrafo breve invitando a agendar una consulta con JAYM Legal (sin inventar un enlace ni un teléfono -- solo menciona "JAYM Legal" o "nuestro equipo"). ' +
-          `Al final del artículo, en un párrafo aparte, firma como "${ABOGADO_RESPONSABLE.nombreCompleto}" seguido de "${MARCA_CORPORATIVA.razonSocial}" en una segunda línea. ` +
+          'El artículo se publica con un diseño editorial fijo que ya pone antetítulo, bajada, firma del autor y pie de página -- tu contenidoHtml es solo el cuerpo, y puede (sin obligación) usar estos dos recursos adicionales cuando el tema los amerite: ' +
+          '(1) si el artículo menciona cifras concretas y verificables (montos, cantidades, fechas, plazos), puedes resumir las más relevantes en un panel al estilo <dl class="cifras"><div class="fact"><dt>Etiqueta corta</dt><dd>Valor</dd></div>...</dl> -- nunca inventes una cifra que no esté ya en el texto; ' +
+          '(2) si hay una idea central que merece destacarse, puedes envolver ESA UNA frase (tomada o resumida del propio análisis, nunca inventada ni atribuida a un tercero) en un <blockquote>. ' +
+          `Al final del artículo, en vez de firmar en párrafos sueltos, cierra con exactamente este bloque (con estos textos y estructura): <div class="firma"><p class="firma-nombre">${ABOGADO_RESPONSABLE.tratamiento[0]}${ABOGADO_RESPONSABLE.tratamiento.slice(1).toLowerCase()} Joseph A. Yan Montero</p><p class="firma-cargo">${ABOGADO_RESPONSABLE.calidad.charAt(0).toUpperCase()}${ABOGADO_RESPONSABLE.calidad.slice(1)} · Fundador y CEO, ${MARCA_CORPORATIVA.razonSocial}</p></div> ` +
           'Regla más importante, sin excepción: NUNCA inventes un número de artículo de ley, plazo exacto, tarifa, cifra o cita textual que no sea de conocimiento general y verificable -- si necesitas mencionar un plazo o requisito legal específico, escríbelo en términos generales o entre corchetes como "[verificar plazo vigente]" en vez de adivinar un número. Este es un borrador que el abogado revisará antes de publicar. ' +
           'Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional antes o después, con exactamente estas claves: ' +
           '"titulo" (string, un título atractivo y orientado a SEO, sin comillas), ' +
-          '"extracto" (string, un resumen de 1-2 frases para usar como extracto/meta descripción), ' +
-          '"contenidoHtml" (string, el cuerpo completo del artículo en HTML simple: <h2>, <p>, <ul>/<ol>/<li>, <strong>/<em> -- sin <html>/<body>, sin estilos ni clases).',
+          '"extracto" (string, un resumen de 1-2 frases para usar como extracto/meta descripción y como bajada del artículo), ' +
+          '"contenidoHtml" (string, el cuerpo completo del artículo en HTML simple: <h2>, <p>, <ul>/<ol>/<li>, <strong>/<em>, y cuando aplique <dl class="cifras">/<blockquote>/<div class="firma"> como se explicó arriba -- sin <html>/<body>, sin <style> ni otras clases distintas a las mencionadas).',
         messages: [
           {
             role: 'user',
