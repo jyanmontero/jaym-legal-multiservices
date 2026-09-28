@@ -1,4 +1,4 @@
-import { IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsDateString, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
 import { MateriaJuridica } from '../../common/enums/index.js';
 
 export class ActualizarBlogPostDto {
@@ -10,8 +10,11 @@ export class ActualizarBlogPostDto {
   @IsString()
   contenidoHtml?: string;
 
+  // Ver crear-blog-post.dto.ts: el extracto es la bajada/meta descripción de
+  // la tarjeta en el listado del blog -- debe ser breve, nunca el artículo completo.
   @IsOptional()
   @IsString()
+  @MaxLength(300, { message: 'El extracto debe ser un resumen breve (máximo 300 caracteres) -- no el artículo completo.' })
   extracto?: string;
 
   @IsOptional()

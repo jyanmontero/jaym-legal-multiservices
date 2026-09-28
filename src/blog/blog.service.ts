@@ -99,6 +99,10 @@ export class BlogService {
     // a borrador); una fecha nueva reprograma (incluso si estaba en fallido).
     if (dto.fechaProgramada !== undefined) {
       if (dto.fechaProgramada) {
+        // Mismo requisito que programar()/publicarAhora() -- este PATCH es
+        // otra vía por la que el frontend puede programar un blog, y no debe
+        // saltarse la validación de extracto/imagen.
+        this.validarListoParaPublicar(post);
         post.fechaProgramada = dto.fechaProgramada;
         post.estado = EstadoBlogPost.PROGRAMADO;
         post.motivoFallo = undefined;
@@ -116,9 +120,7 @@ export class BlogService {
     if (post.estado === EstadoBlogPost.PUBLICADO) {
       throw new BadRequestException('Este blog ya fue publicado.');
     }
-    if (!post.titulo?.trim() || !post.contenidoHtml?.trim()) {
-      throw new BadRequestException('El blog necesita título y contenido antes de programarlo.');
-    }
+    this.validarListoParaPublicar(post);
     post.fechaProgramada = fechaProgramada;
     post.estado = EstadoBlogPost.PROGRAMADO;
     post.motivoFallo = undefined;
@@ -167,10 +169,31 @@ export class BlogService {
     if (post.estado === EstadoBlogPost.PUBLICADO) {
       throw new BadRequestException('Este blog ya fue publicado.');
     }
+    this.validarListoParaPublicar(post);
+    return this.publicarInterno(post);
+  }
+
+  /**
+   * Requisitos mínimos para que la tarjeta del blog salga organizada en
+   * jaymlegalmultiservices.com/blog/ (imagen + extracto breve) -- ver
+   * claude/blog-tarjeta-listado-2026-09-28.md: el post de SeNaSa se publicó
+   * sin ninguno de los dos y la tarjeta salió como un bloque de texto sin
+   * imagen, distinta a las demás del listado.
+   */
+  private validarListoParaPublicar(post: BlogPost): void {
     if (!post.titulo?.trim() || !post.contenidoHtml?.trim()) {
       throw new BadRequestException('El blog necesita título y contenido antes de publicarlo.');
     }
-    return this.publicarInterno(post);
+    if (!post.extracto?.trim()) {
+      throw new BadRequestException(
+        'Falta el extracto (resumen breve) -- sin él, la tarjeta del blog sale como un bloque de texto largo en la lista de blogs.',
+      );
+    }
+    if (!post.imagenDestacadaClave) {
+      throw new BadRequestException(
+        'Falta la imagen destacada -- sin ella, la tarjeta de este blog sale sin foto en la lista, distinta a las demás.',
+      );
+    }
   }
 
   /** Usado por el cron diario (blog.scheduler.ts) -- nunca lanza, deja el error registrado en el propio blog (estado fallido). */
