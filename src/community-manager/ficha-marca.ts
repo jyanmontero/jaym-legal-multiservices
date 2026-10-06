@@ -80,7 +80,7 @@ export const INFO_REDES: Record<RedSocial, InfoRed> = {
     nombre: 'X',
     limite: 270,
     automatica: false,
-    urlPerfil: 'https://x.com/',
+    urlPerfil: 'https://x.com/jaym_legend',
     urlPublicar: 'https://x.com/compose/post',
     estilo: 'Una idea directa en menos de 270 caracteres. Máximo 2 hashtags.',
   },
