@@ -4,7 +4,8 @@ import { ConfigService } from '@nestjs/config';
 interface RespuestaMeta {
   id?: string;
   post_id?: string;
-  error?: { message: string; type?: string; code?: number };
+  status_code?: string;
+  error?: { message: string; type?: string; code?: number; error_subcode?: number };
 }
 
 /**
@@ -16,10 +17,10 @@ interface RespuestaMeta {
  * App de Meta usada para generar el token.
  *
  * Requiere en el .env / variables de entorno de Render:
- *   META_PAGE_ID                       -- ID de la Página de Facebook
- *   META_PAGE_ACCESS_TOKEN             -- token de acceso de larga duración de esa Página
+ *   META_PAGE_ID -- ID de la Página de Facebook
+ *   META_PAGE_ACCESS_TOKEN -- token de acceso de larga duración de esa Página
  *   META_INSTAGRAM_BUSINESS_ACCOUNT_ID -- ID de la cuenta de Instagram Business vinculada
- *   META_GRAPH_API_VERSION             -- opcional, por defecto 'v21.0'
+ *   META_GRAPH_API_VERSION -- opcional, por defecto 'v21.0'
  */
 @Injectable()
 export class MetaGraphService {
@@ -73,6 +74,44 @@ export class MetaGraphService {
       );
     }
     return datos;
+  }
+
+  private pausa(ms: number): Promise<void> {
+    return new Promise((resolver) => setTimeout(resolver, ms));
+  }
+
+  /**
+   * Instagram procesa la imagen de forma asíncrona después de crear el
+   * contenedor. Si se llama a media_publish antes de que termine, Meta
+   * responde "Media ID is not available" (código 9007 / subcódigo 2207027).
+   * Se consulta el estado del contenedor hasta que sea FINISHED (máx. ~90 s).
+   */
+  private async esperarContenedorListo(creationId: string): Promise<void> {
+    const consulta = new URLSearchParams({
+      fields: 'status_code',
+      access_token: this.pageToken(),
+    }).toString();
+    const intentosMaximos = 30;
+    for (let i = 0; i < intentosMaximos; i++) {
+      const respuesta = await fetch(`${this.base()}/${creationId}?${consulta}`);
+      const datos = (await respuesta.json()) as RespuestaMeta;
+      if (datos.error) {
+        this.logger.error(`Graph API estado de ${creationId} falló: ${JSON.stringify(datos.error)}`);
+        throw new BadRequestException(
+          `Meta no pudo confirmar el estado del contenido: ${datos.error.message}`,
+        );
+      }
+      if (datos.status_code === 'FINISHED') return;
+      if (datos.status_code === 'ERROR' || datos.status_code === 'EXPIRED') {
+        throw new BadRequestException(
+          `Instagram no pudo procesar el contenido (estado ${datos.status_code}). Revisa que las fotos sean JPG/PNG públicas y de tamaño razonable.`,
+        );
+      }
+      await this.pausa(3000);
+    }
+    throw new BadRequestException(
+      'Instagram tardó demasiado en procesar las fotos. Intenta de nuevo en unos minutos o con fotos más livianas.',
+    );
   }
 
   /** Publica en la Página de Facebook. Devuelve el ID del post. */
@@ -136,6 +175,10 @@ export class MetaGraphService {
         });
         if (item.id) hijos.push(item.id);
       }
+      // Cada hijo debe estar procesado antes de agruparlos en el padre.
+      for (const hijo of hijos) {
+        await this.esperarContenedorListo(hijo);
+      }
       const padre = await this.llamar(`${igUserId}/media`, {
         media_type: 'CAROUSEL',
         children: hijos.join(','),
@@ -144,6 +187,9 @@ export class MetaGraphService {
       });
       creationId = padre.id ?? '';
     }
+
+    // Esperar a que Instagram termine de procesar antes de publicar.
+    await this.esperarContenedorListo(creationId);
 
     const publicado = await this.llamar(`${igUserId}/media_publish`, {
       creation_id: creationId,
