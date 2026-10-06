@@ -28,6 +28,7 @@ import { AnalisisJuridicoModule } from './analisis-juridico/analisis-juridico.mo
 import { RedaccionModule } from './redaccion/redaccion.module.js';
 import { MarketingModule } from './marketing/marketing.module.js';
 import { BlogModule } from './blog/blog.module.js';
+import { CommunityManagerModule } from './community-manager/community-manager.module.js';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard.js';
@@ -90,6 +91,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard.js';
     RedaccionModule,
     MarketingModule,
     BlogModule,
+    CommunityManagerModule,
     HubSpotModule,
     GoogleCalendarModule,
     AsistenteModule,
