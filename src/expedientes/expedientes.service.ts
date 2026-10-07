@@ -11,6 +11,7 @@ import {
 } from '../common/enums/index.js';
 import { HistorialService } from '../historial/historial.service.js';
 import { ExpedienteRequisitosService } from '../requisitos/expediente-requisitos.service.js';
+import { CatalogoServiciosService } from '../requisitos/catalogo-servicios.service.js';
 import { Cotizacion } from '../facturacion/cotizacion.entity.js';
 import { Factura } from '../facturacion/factura.entity.js';
 import { Documento } from '../documentos/documento.entity.js';
@@ -34,6 +35,7 @@ export class ExpedientesService {
     private readonly expedienteRepo: Repository<Expediente>,
     private readonly historialService: HistorialService,
     private readonly requisitosService: ExpedienteRequisitosService,
+    private readonly catalogoService: CatalogoServiciosService,
     @InjectDataSource()
     private readonly dataSource: DataSource,
   ) {}
@@ -63,6 +65,12 @@ export class ExpedientesService {
   }
 
   async crear(dto: CreateExpedienteDto, usuarioId: string): Promise<Expediente> {
+    const servicio = dto.servicioCodigo ? await this.catalogoService.obtener(dto.servicioCodigo) : null;
+    if (dto.servicioCodigo && !servicio) throw new BadRequestException('El servicio indicado no existe en el catálogo.');
+    if (servicio) {
+      dto.materia = servicio.materia;
+      dto.tipoServicio = dto.tipoServicio ?? servicio.nombre; // compatibilidad con el campo de texto
+    }
     const codigo = await this.generarCodigo(dto.materia);
 
     const expediente = this.expedienteRepo.create({
@@ -90,7 +98,11 @@ export class ExpedientesService {
     // Genera el checklist de requisitos según la materia — sección 8. No
     // bloquea la creación del expediente si no hay plantillas configuradas
     // para esa materia (queda con checklist vacío, se puede completar manual).
-    await this.requisitosService.generarDesdeMateria(guardado.id, dto.materia);
+    if (servicio) {
+      await this.requisitosService.sincronizarConServicio(guardado.id, servicio.codigo, guardado.perfil ?? {});
+    } else {
+      await this.requisitosService.generarDesdeMateria(guardado.id, dto.materia);
+    }
 
     return guardado;
   }
@@ -231,6 +243,51 @@ export class ExpedientesService {
     }
 
     return actualizado;
+  }
+
+  /**
+   * Cambia el servicio o el perfil de un expediente y sincroniza su checklist
+   * (nunca borra requisitos; ver ExpedienteRequisitosService.sincronizarConServicio).
+   * El cambio queda en el historial del expediente, en la misma transacción.
+   */
+  async cambiarServicio(
+    id: string,
+    cambio: { servicioCodigo: string; perfil?: Record<string, boolean>; motivo?: string },
+    usuarioId: string,
+    ipDispositivo?: string,
+    usuarioActual?: UsuarioActual,
+  ) {
+    const servicio = await this.catalogoService.obtener(cambio.servicioCodigo);
+    if (!servicio) throw new BadRequestException('El servicio indicado no existe en el catálogo.');
+
+    return this.dataSource.transaction(async (manager) => {
+      const repo = manager.getRepository(Expediente);
+      const actual = await repo.findOne({ where: { id } });
+      if (!actual) throw new NotFoundException('Expediente no encontrado');
+      this.verificarVisibilidad(actual, usuarioActual);
+
+      const snapshotAnterior = this.toSnapshot(actual);
+      actual.servicioCodigo = servicio.codigo;
+      actual.perfil = cambio.perfil ?? actual.perfil ?? {};
+      actual.tipoServicio = servicio.nombre;
+      actual.materia = servicio.materia;
+      const guardado = await repo.save(actual);
+
+      await this.historialService.registrarCambio(
+        {
+          expedienteId: id,
+          snapshotAnterior,
+          snapshotNuevo: this.toSnapshot(guardado),
+          usuarioId,
+          motivo: cambio.motivo ?? `Servicio del expediente: ${servicio.nombre}`,
+          ipDispositivo,
+        },
+        manager,
+      );
+
+      const resultado = await this.requisitosService.sincronizarConServicio(id, servicio.codigo, guardado.perfil, manager);
+      return { expediente: guardado, requisitos: resultado };
+    });
   }
 
   /**

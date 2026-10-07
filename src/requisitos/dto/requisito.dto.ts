@@ -82,6 +82,10 @@ export class CrearRequisitoManualDto {
 
 export class ActualizarRequisitoDto {
   @IsOptional()
+  @IsString()
+  motivoNoAplica?: string;
+
+  @IsOptional()
   @IsEnum(EstadoRequisito)
   estado?: EstadoRequisito;
 

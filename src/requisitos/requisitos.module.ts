@@ -6,6 +6,9 @@ import { RequisitosPlantillaService } from './requisitos-plantilla.service.js';
 import { ExpedienteRequisitosService } from './expediente-requisitos.service.js';
 import { RequisitosPlantillaController } from './requisitos-plantilla.controller.js';
 import { ExpedienteRequisitosController } from './expediente-requisitos.controller.js';
+import { ServicioCatalogo } from './servicio-catalogo.entity.js';
+import { CatalogoServiciosService } from './catalogo-servicios.service.js';
+import { CatalogoServiciosController } from './catalogo-servicios.controller.js';
 import { Expediente } from '../expedientes/expediente.entity.js';
 
 @Module({
@@ -14,12 +17,12 @@ import { Expediente } from '../expedientes/expediente.entity.js';
   // el controlador pueda duplicar la regla de visibilidad de
   // ExpedientesService.verificarVisibilidad() -- ver comentario en
   // ExpedienteRequisitosController.
-  imports: [TypeOrmModule.forFeature([RequisitoPlantilla, ExpedienteRequisito, Expediente])],
-  controllers: [RequisitosPlantillaController, ExpedienteRequisitosController],
-  providers: [RequisitosPlantillaService, ExpedienteRequisitosService],
+  imports: [TypeOrmModule.forFeature([RequisitoPlantilla, ExpedienteRequisito, Expediente, ServicioCatalogo])],
+  controllers: [RequisitosPlantillaController, ExpedienteRequisitosController, CatalogoServiciosController],
+  providers: [RequisitosPlantillaService, ExpedienteRequisitosService, CatalogoServiciosService],
   // Se exporta para que ExpedientesModule pueda generar el checklist
   // automáticamente al crear un expediente y calcular la advertencia de
   // depósito al actualizar su estado.
-  exports: [ExpedienteRequisitosService],
+  exports: [ExpedienteRequisitosService, CatalogoServiciosService],
 })
 export class RequisitosModule {}

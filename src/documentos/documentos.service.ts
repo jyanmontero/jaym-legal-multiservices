@@ -10,6 +10,7 @@ import { randomUUID } from 'crypto';
 import { extname } from 'path';
 import { Documento } from './documento.entity.js';
 import { DocumentoPermiso } from './documento-permiso.entity.js';
+import { DocumentoAcceso } from './documento-acceso.entity.js';
 import { AlmacenamientoService } from './almacenamiento.service.js';
 import { SubirDocumentoDto } from './dto/subir-documento.dto.js';
 import {
@@ -29,6 +30,8 @@ export class DocumentosService {
     private readonly documentoRepo: Repository<Documento>,
     @InjectRepository(DocumentoPermiso)
     private readonly permisoRepo: Repository<DocumentoPermiso>,
+    @InjectRepository(DocumentoAcceso)
+    private readonly accesoRepo: Repository<DocumentoAcceso>,
     private readonly expedientesService: ExpedientesService,
     private readonly almacenamientoService: AlmacenamientoService,
   ) {}
@@ -249,6 +252,20 @@ export class DocumentosService {
    */
   async streamDescarga(documento: Documento) {
     return this.almacenamientoService.streamDescarga(documento.rutaAlmacenamiento);
+  }
+
+  /** Bitácora de accesos (solo inserta). Un fallo aquí nunca debe impedir ver el documento. */
+  async registrarAcceso(
+    documentoId: string,
+    usuarioId: string,
+    accion: 'ver' | 'descargar',
+    ip?: string,
+  ): Promise<void> {
+    try {
+      await this.accesoRepo.insert({ documentoId, usuarioId, accion, ip: ip ?? null });
+    } catch {
+      // auditoría best-effort
+    }
   }
 
   /** Solo válido cuando no se está usando R2 (ver AlmacenamientoService). */

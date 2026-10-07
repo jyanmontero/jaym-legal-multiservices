@@ -45,6 +45,14 @@ export class Expediente {
   @Column({ nullable: true })
   tipoServicio?: string;
 
+  /** Servicio del catálogo (servicios_catalogo.codigo) que define su checklist. */
+  @Column({ type: 'varchar', nullable: true })
+  servicioCodigo?: string | null;
+
+  /** Respuestas a las preguntas de perfil del servicio (ej. { hijos_menores: true }). */
+  @Column({ type: 'jsonb', default: () => "'{}'" })
+  perfil: Record<string, boolean>;
+
   @Column('text', { nullable: true })
   descripcion?: string;
 

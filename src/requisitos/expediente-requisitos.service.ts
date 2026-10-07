@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, EntityManager } from 'typeorm';
+import { CatalogoServiciosService } from './catalogo-servicios.service.js';
 import { ExpedienteRequisito } from './expediente-requisito.entity.js';
 import { RequisitosPlantillaService } from './requisitos-plantilla.service.js';
 import { CrearRequisitoManualDto, ActualizarRequisitoDto } from './dto/requisito.dto.js';
@@ -19,6 +20,7 @@ export class ExpedienteRequisitosService {
     @InjectRepository(ExpedienteRequisito)
     private readonly requisitoRepo: Repository<ExpedienteRequisito>,
     private readonly plantillaService: RequisitosPlantillaService,
+    private readonly catalogoService: CatalogoServiciosService,
   ) {}
 
   /**
@@ -26,7 +28,8 @@ export class ExpedienteRequisitosService {
    * sección 8. Se llama automáticamente desde ExpedientesService.crear().
    */
   async generarDesdeMateria(expedienteId: string, materia: MateriaJuridica): Promise<void> {
-    const plantillas = await this.plantillaService.listarPorMateria(materia);
+    // Sin perfil no se pueden evaluar condiciones: solo los requisitos siempre aplicables.
+    const plantillas = (await this.plantillaService.listarPorMateria(materia)).filter((p) => !p.condicion);
     if (plantillas.length === 0) return;
 
     const requisitos = plantillas.map((p) =>
@@ -38,10 +41,69 @@ export class ExpedienteRequisitosService {
         obligatorio: p.obligatorio,
         orden: p.orden,
         estado: EstadoRequisito.PENDIENTE,
+        origen: 'materia',
+        plantillaCodigo: p.codigo,
+        tipo: p.tipo,
+        categoriaDocumento: p.categoriaDocumento,
+        aporta: p.aporta,
+        validar: p.validar,
       }),
     );
 
     await this.requisitoRepo.save(requisitos);
+  }
+
+  /**
+   * Genera o sincroniza el checklist de un expediente a partir de su servicio
+   * del catálogo y su perfil (generales + requisitos del servicio cuya
+   * condición se cumpla). Reglas al cambiar servicio/perfil:
+   *  - se agrega lo que falta;
+   *  - NUNCA se borra nada ni se toca un requisito ya completado;
+   *  - lo que dejó de aplicar se marca no_aplica con motivo automático;
+   *  - lo marcado no_aplica automáticamente que vuelve a aplicar se reabre;
+   *  - los requisitos manuales y los no_aplica decididos por una persona no se tocan.
+   */
+  async sincronizarConServicio(
+    expedienteId: string,
+    servicioCodigo: string,
+    perfil: Record<string, boolean>,
+    manager?: EntityManager,
+  ): Promise<{ agregados: number; marcadosNoAplica: number; reabiertos: number }> {
+    const repo = manager ? manager.getRepository(ExpedienteRequisito) : this.requisitoRepo;
+    const deseados = await this.catalogoService.requisitosAplicables(servicioCodigo, perfil);
+    const existentes = await repo.find({ where: { expedienteId } });
+    const porCodigo = new Map(existentes.filter((e) => e.plantillaCodigo).map((e) => [e.plantillaCodigo!, e]));
+    const codigosDeseados = new Set(deseados.map((d) => d.codigo!));
+    const AUTO = 'Auto:';
+    let agregados = 0, marcadosNoAplica = 0, reabiertos = 0;
+
+    for (const d of deseados) {
+      const ya = porCodigo.get(d.codigo!);
+      if (!ya) {
+        await repo.save(repo.create({
+          expedienteId, requisitoPlantillaId: d.id, plantillaCodigo: d.codigo, nombreRequisito: d.nombreRequisito,
+          descripcion: d.nota ?? d.descripcion, obligatorio: d.obligatorio, orden: d.orden,
+          estado: EstadoRequisito.PENDIENTE, origen: d.general ? 'general' : 'servicio',
+          tipo: d.tipo, categoriaDocumento: d.categoriaDocumento, aporta: d.aporta, validar: d.validar,
+        }));
+        agregados++;
+      } else if (ya.estado === EstadoRequisito.NO_APLICA && ya.motivoNoAplica?.startsWith(AUTO)) {
+        await repo.update(ya.id, { estado: EstadoRequisito.PENDIENTE, motivoNoAplica: null } as any);
+        reabiertos++;
+      }
+    }
+
+    for (const e of existentes) {
+      if (!e.plantillaCodigo || e.origen === 'manual' || e.origen === 'materia') continue;
+      if (codigosDeseados.has(e.plantillaCodigo)) continue;
+      if (e.estado === EstadoRequisito.COMPLETO || e.estado === EstadoRequisito.NO_APLICA) continue;
+      await repo.update(e.id, {
+        estado: EstadoRequisito.NO_APLICA,
+        motivoNoAplica: `${AUTO} dejó de aplicar al cambiar el servicio o el perfil del expediente`,
+      } as any);
+      marcadosNoAplica++;
+    }
+    return { agregados, marcadosNoAplica, reabiertos };
   }
 
   async agregarManual(
@@ -56,6 +118,7 @@ export class ExpedienteRequisitosService {
       fechaPrometida: dto.fechaPrometida,
       responsableId: dto.responsableId,
       estado: EstadoRequisito.PENDIENTE,
+      origen: 'manual',
       // requisitoPlantillaId queda nulo: es un requisito único de este caso.
     });
     return this.requisitoRepo.save(requisito);
@@ -76,6 +139,14 @@ export class ExpedienteRequisitosService {
 
   async actualizar(id: string, dto: ActualizarRequisitoDto): Promise<ExpedienteRequisito> {
     const requisito = await this.obtenerPorId(id);
+
+    if (dto.estado === EstadoRequisito.NO_APLICA && !dto.motivoNoAplica?.trim()) {
+      throw new BadRequestException('Para marcar un requisito como «no aplica» debe indicar el motivo.');
+    }
+    if (dto.estado && dto.estado !== EstadoRequisito.NO_APLICA) {
+      // Al salir de «no aplica» se limpia el motivo (update con null explícito: ver nota abajo).
+      await this.requisitoRepo.update(id, { motivoNoAplica: null } as any);
+    }
 
     Object.assign(requisito, dto);
 

@@ -38,7 +38,10 @@ export class ExpedienteRequisitosController {
   @Get()
   async listar(@Param('expedienteId') expedienteId: string, @CurrentUser() usuario: JwtPayloadUsuario) {
     await this.verificarVisibilidadExpediente(expedienteId, usuario);
-    return this.requisitosService.listarPorExpediente(expedienteId);
+    const lista = await this.requisitosService.listarPorExpediente(expedienteId);
+    // La etiqueta «por validar» es solo para roles administrativos.
+    if (ROLES_CON_VISIBILIDAD_TOTAL_EXPEDIENTES.includes(usuario.rol as RolUsuario)) return lista;
+    return lista.map((r) => ({ ...r, validar: false }));
   }
 
   @Get('progreso')

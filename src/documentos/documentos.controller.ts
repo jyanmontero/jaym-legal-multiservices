@@ -13,11 +13,14 @@ import {
   ParseFilePipeBuilder,
   HttpStatus,
   BadRequestException,
+  UnsupportedMediaTypeException,
+  Req,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { extname } from 'path';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
+import { tipoVisualizable } from './tipos-visualizables.js';
 import { DocumentosService } from './documentos.service.js';
 import { SubirDocumentoDto, NuevaVersionDocumentoDto } from './dto/subir-documento.dto.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
@@ -161,16 +164,60 @@ export class DocumentosController {
     return this.documentosService.listarVersiones(id);
   }
 
+  /**
+   * Visor en la plataforma: entrega el archivo "en línea" (inline) para
+   * mostrarlo sin descargarlo. Aplica exactamente las mismas reglas de
+   * visibilidad y confidencialidad que la descarga, y solo sirve tipos de la
+   * lista cerrada de tipos-visualizables.ts (415 para el resto).
+   */
+  @Get(':id/vista')
+  async vista(
+    @Param('id') id: string,
+    @CurrentUser() usuario: JwtPayloadUsuario,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    const documento = await this.documentosService.obtenerPorId(id);
+    const usuarioActual = { id: usuario.sub, rol: usuario.rol as RolUsuario };
+    await this.documentosService.verificarVisibilidadDocumento(documento, usuarioActual);
+    await this.documentosService.verificarAcceso(documento, usuarioActual.rol, 'ver');
+
+    const tipo = tipoVisualizable(documento.nombreArchivo, documento.tipoMime);
+    if (!tipo) {
+      throw new UnsupportedMediaTypeException(
+        'Este tipo de archivo no se puede visualizar en la plataforma; descárguelo para abrirlo.',
+      );
+    }
+
+    await this.documentosService.registrarAcceso(documento.id, usuario.sub, 'ver', req.ip);
+
+    res.setHeader('Content-Type', tipo);
+    res.setHeader('Content-Disposition', 'inline');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'");
+
+    const remoto = await this.documentosService.streamDescarga(documento);
+    if (remoto) {
+      if (remoto.contentLength) res.setHeader('Content-Length', String(remoto.contentLength));
+      remoto.body.pipe(res);
+      return;
+    }
+    return res.sendFile(this.documentosService.rutaFisica(documento), { root: '/' });
+  }
+
   @Get(':id/descargar')
   async descargar(
     @Param('id') id: string,
     @CurrentUser() usuario: JwtPayloadUsuario,
+    @Req() req: Request,
     @Res() res: Response,
   ) {
     const documento = await this.documentosService.obtenerPorId(id);
     const usuarioActual = { id: usuario.sub, rol: usuario.rol as RolUsuario };
     await this.documentosService.verificarVisibilidadDocumento(documento, usuarioActual);
     await this.documentosService.verificarAcceso(documento, usuarioActual.rol, 'descargar');
+    await this.documentosService.registrarAcceso(documento.id, usuario.sub, 'descargar', req.ip);
 
     // En producción (R2): el propio servidor descarga el archivo de
     // Cloudflare y se lo entrega al navegador (en vez de redirigir a una

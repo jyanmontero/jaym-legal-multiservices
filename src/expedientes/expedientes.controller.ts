@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import { ExpedientesService } from './expedientes.service.js';
 import { ResumenCotizacionService } from './resumen-cotizacion.service.js';
-import { CreateExpedienteDto, UpdateExpedienteDto } from './dto/expediente.dto.js';
+import { CreateExpedienteDto, UpdateExpedienteDto, CambiarServicioDto } from './dto/expediente.dto.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import type { JwtPayloadUsuario } from '../auth/decorators/current-user.decorator.js';
 import { RolUsuario, Permiso } from '../common/enums/index.js';
@@ -70,6 +70,19 @@ export class ExpedientesController {
     @Ip() ip: string,
   ) {
     return this.expedientesService.actualizar(id, dto, usuario.sub, ip, {
+      id: usuario.sub,
+      rol: usuario.rol as RolUsuario,
+    });
+  }
+
+  @Patch(':id/servicio')
+  cambiarServicio(
+    @Param('id') id: string,
+    @Body() dto: CambiarServicioDto,
+    @CurrentUser() usuario: JwtPayloadUsuario,
+    @Ip() ip: string,
+  ) {
+    return this.expedientesService.cambiarServicio(id, dto, usuario.sub, ip, {
       id: usuario.sub,
       rol: usuario.rol as RolUsuario,
     });
