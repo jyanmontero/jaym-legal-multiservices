@@ -16,12 +16,16 @@ export class AlertasController {
     @Query('resuelta') resuelta?: string,
     @Query('severidad') severidad?: SeveridadAlerta,
     @Query('expedienteId') expedienteId?: string,
+    @Query('categoria') categoria?: string,
+    @Query('materia') materia?: string,
   ) {
     return this.alertasService.listar(
       {
         resuelta: resuelta === undefined ? undefined : resuelta === 'true',
         severidad,
         expedienteId,
+        categoria,
+        materia,
       },
       { id: usuario.sub, rol: usuario.rol as RolUsuario },
     );
