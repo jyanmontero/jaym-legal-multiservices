@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, IsNull, Repository } from 'typeorm';
+import { In, IsNull, Like, Repository } from 'typeorm';
 import { readFile } from 'fs/promises';
 import { ServicioCatalogo } from './servicio-catalogo.entity.js';
 import { RequisitoPlantilla } from './requisito-plantilla.entity.js';
@@ -15,6 +15,7 @@ interface CatalogoJson {
   version: string;
   perfilPreguntas: Record<string, string>;
   generales: (ReqJson & { id: string })[];
+  materias?: { materia: string; nombre: string; requisitos: ReqJson[] }[];
   areas: {
     area: string; materia: string;
     servicios: {
@@ -41,7 +42,8 @@ export class CatalogoServiciosService implements OnModuleInit {
   /** Si el catálogo aún no se ha cargado, lo carga (idempotente). Nunca impide arrancar la app. */
   async onModuleInit(): Promise<void> {
     try {
-      if ((await this.servicioRepo.count()) === 0) await this.cargar();
+      const sinMaterias = (await this.plantillaRepo.count({ where: { codigo: Like('materia.%') } })) === 0;
+      if ((await this.servicioRepo.count()) === 0 || sinMaterias) await this.cargar();
     } catch (e) {
       this.logger.warn(`No se pudo cargar el catálogo al iniciar: ${(e as Error).message}`);
     }
@@ -57,7 +59,7 @@ export class CatalogoServiciosService implements OnModuleInit {
    * por código. Un requisito ya aprobado por el abogado conserva su
    * aprobación (validar=false) aunque se vuelva a cargar el archivo.
    */
-  async cargar(): Promise<{ servicios: number; requisitos: number; generales: number }> {
+  async cargar(): Promise<{ servicios: number; requisitos: number; generales: number; materias: number }> {
     const cat = await this.leerJson();
     this.preguntas = cat.perfilPreguntas;
     let servicios = 0, requisitos = 0;
@@ -88,6 +90,14 @@ export class CatalogoServiciosService implements OnModuleInit {
       await upsertReq(g, { general: true, servicioCodigo: null, materia: MateriaJuridica.OTRA });
     }
 
+    // Requisitos base por materia (sin servicio): lo que usa un expediente
+    // creado sin elegir un servicio del catálogo.
+    for (const m of cat.materias ?? []) {
+      for (const r of m.requisitos) {
+        await upsertReq(r, { general: false, servicioCodigo: null, materia: m.materia as MateriaJuridica });
+      }
+    }
+
     for (const area of cat.areas) {
       for (const s of area.servicios) {
         const datos = {
@@ -103,7 +113,7 @@ export class CatalogoServiciosService implements OnModuleInit {
         }
       }
     }
-    return { servicios, requisitos, generales: cat.generales.length };
+    return { servicios, requisitos, generales: cat.generales.length, materias: cat.materias?.length ?? 0 };
   }
 
   async preguntasPerfil(): Promise<Record<string, string>> {

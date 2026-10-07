@@ -28,7 +28,8 @@ export class ExpedienteRequisitosService {
    * sección 8. Se llama automáticamente desde ExpedientesService.crear().
    */
   async generarDesdeMateria(expedienteId: string, materia: MateriaJuridica): Promise<void> {
-    const plantillas = await this.plantillaService.listarPorMateria(materia);
+    // Sin perfil no se pueden evaluar condiciones: solo los requisitos siempre aplicables.
+    const plantillas = (await this.plantillaService.listarPorMateria(materia)).filter((p) => !p.condicion);
     if (plantillas.length === 0) return;
 
     const requisitos = plantillas.map((p) =>
@@ -40,6 +41,12 @@ export class ExpedienteRequisitosService {
         obligatorio: p.obligatorio,
         orden: p.orden,
         estado: EstadoRequisito.PENDIENTE,
+        origen: 'materia',
+        plantillaCodigo: p.codigo,
+        tipo: p.tipo,
+        categoriaDocumento: p.categoriaDocumento,
+        aporta: p.aporta,
+        validar: p.validar,
       }),
     );
 
