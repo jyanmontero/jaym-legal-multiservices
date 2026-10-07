@@ -5,7 +5,7 @@ import {
   CreateDateColumn,
   Index,
 } from 'typeorm';
-import { TipoReglaAlerta, SeveridadAlerta } from '../common/enums/index.js';
+import { TipoReglaAlerta, SeveridadAlerta, CategoriaAlerta } from '../common/enums/index.js';
 
 /**
  * Alerta generada automáticamente por el motor de reglas — sección 14.
@@ -23,6 +23,10 @@ export class Alerta {
 
   @Column({ type: 'enum', enum: SeveridadAlerta })
   severidad: SeveridadAlerta;
+
+  /** Tipo de asunto (audiencia, reunión, cobro, depósito, plazo...). */
+  @Column({ type: 'varchar', default: CategoriaAlerta.OTROS })
+  categoria: string;
 
   @Column({ nullable: true })
   expedienteId?: string;

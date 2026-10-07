@@ -12,6 +12,8 @@ import { Factura } from '../facturacion/factura.entity.js';
 import {
   TipoReglaAlerta,
   SeveridadAlerta,
+  CategoriaAlerta,
+  TipoEventoAgenda,
   EstadoExpediente,
   EstadoRequisito,
   EstadoEventoAgenda,
@@ -29,12 +31,55 @@ interface UsuarioActualAlertas {
   rol: RolUsuario;
 }
 
+export type AlertaConExpediente = Alerta & {
+  expediente: {
+    id: string;
+    codigo: string;
+    materia: string;
+    contraparte?: string;
+    tribunalInstitucion?: string;
+  } | null;
+};
+
 type CampoEntidad = 'expedienteId' | 'documentoId' | 'agendaEventoId' | 'facturaId';
 
 interface CandidatoAlerta {
   entidadId: string; // valor que va en el campo FK (expedienteId, documentoId, etc.)
+  categoria?: string;
+  expedienteId?: string | null; // expediente al que pertenece, si lo hay
+  clienteId?: string | null;
   mensaje: string;
   severidad: SeveridadAlerta;
+}
+
+function categoriaDeEvento(tipo: TipoEventoAgenda): CategoriaAlerta {
+  switch (tipo) {
+    case TipoEventoAgenda.AUDIENCIA: return CategoriaAlerta.AUDIENCIAS;
+    case TipoEventoAgenda.REUNION:
+    case TipoEventoAgenda.CITA:
+    case TipoEventoAgenda.LLAMADA: return CategoriaAlerta.REUNIONES;
+    case TipoEventoAgenda.DEPOSITO: return CategoriaAlerta.DEPOSITOS;
+    case TipoEventoAgenda.VENCIMIENTO:
+    case TipoEventoAgenda.PLAZO_JUDICIAL: return CategoriaAlerta.PLAZOS;
+    default: return CategoriaAlerta.SEGUIMIENTO;
+  }
+}
+
+function etiquetaEvento(tipo: TipoEventoAgenda): string {
+  switch (tipo) {
+    case TipoEventoAgenda.AUDIENCIA: return 'La audiencia';
+    case TipoEventoAgenda.REUNION: return 'La reunión';
+    case TipoEventoAgenda.CITA: return 'La cita';
+    case TipoEventoAgenda.LLAMADA: return 'La llamada';
+    case TipoEventoAgenda.DEPOSITO: return 'El depósito';
+    case TipoEventoAgenda.VENCIMIENTO: return 'El vencimiento';
+    case TipoEventoAgenda.PLAZO_JUDICIAL: return 'El plazo judicial';
+    default: return 'El evento';
+  }
+}
+
+function fechaLocal(d: Date): string {
+  return d.toLocaleString('es-DO', { timeZone: 'America/Santo_Domingo', dateStyle: 'medium', timeStyle: 'short' });
 }
 
 const ESTADOS_EXPEDIENTE_CERRADOS = [
@@ -109,13 +154,16 @@ export class AlertasService implements OnModuleInit {
       resuelta?: boolean;
       severidad?: SeveridadAlerta;
       expedienteId?: string;
+      categoria?: string;
+      materia?: string;
     },
     usuarioActual?: UsuarioActualAlertas,
-  ): Promise<Alerta[]> {
+  ): Promise<AlertaConExpediente[]> {
     const qb = this.alertaRepo.createQueryBuilder('a');
     if (filtros.resuelta !== undefined) qb.andWhere('a.resuelta = :r', { r: filtros.resuelta });
     if (filtros.severidad) qb.andWhere('a.severidad = :s', { s: filtros.severidad });
     if (filtros.expedienteId) qb.andWhere('a.expedienteId = :e', { e: filtros.expedienteId });
+    if (filtros.categoria) qb.andWhere('a.categoria = :cat', { cat: filtros.categoria });
 
     if (usuarioActual && !ROLES_CON_VISIBILIDAD_TOTAL_EXPEDIENTES.includes(usuarioActual.rol)) {
       qb.leftJoin('expedientes', 'exp', 'exp.id = a."expedienteId"');
@@ -125,7 +173,23 @@ export class AlertasService implements OnModuleInit {
       );
     }
 
-    return qb.orderBy('a.creadoEn', 'DESC').getMany();
+    const alertas = await qb.orderBy('a.creadoEn', 'DESC').getMany();
+
+    // Cada alerta lleva los datos básicos de su expediente (si lo tiene) para
+    // poder mostrarla agrupada por materia y enlazarla desde la pantalla.
+    const ids = [...new Set(alertas.map((a) => a.expedienteId).filter((x): x is string => !!x))];
+    const expedientes = ids.length ? await this.expedienteRepo.find({ where: { id: In(ids) } }) : [];
+    const porId = new Map(expedientes.map((e) => [e.id, e]));
+    const enriquecidas: AlertaConExpediente[] = alertas.map((a) => {
+      const e = a.expedienteId ? porId.get(a.expedienteId) : undefined;
+      return {
+        ...a,
+        expediente: e
+          ? { id: e.id, codigo: e.codigo, materia: e.materia, contraparte: e.contraparte, tribunalInstitucion: e.tribunalInstitucion }
+          : null,
+      };
+    });
+    return filtros.materia ? enriquecidas.filter((a) => a.expediente?.materia === filtros.materia) : enriquecidas;
   }
 
   /** Misma regla de visibilidad que listar(), evaluada para una sola alerta. */
@@ -201,6 +265,7 @@ export class AlertasService implements OnModuleInit {
 
     const candidatos: CandidatoAlerta[] = expedientes.map((e) => ({
       entidadId: e.id,
+      categoria: CategoriaAlerta.SEGUIMIENTO,
       mensaje: `El expediente ${e.codigo} no tiene actualizaciones desde hace más de ${config.umbralDias} días.`,
       severidad: config.severidadDefault,
     }));
@@ -225,6 +290,7 @@ export class AlertasService implements OnModuleInit {
       const vencidos = expedientesActivos.filter((e) => e.fechaLimite && e.fechaLimite < hoy);
       const candidatos: CandidatoAlerta[] = vencidos.map((e) => ({
         entidadId: e.id,
+        categoria: CategoriaAlerta.PLAZOS,
         mensaje: `El expediente ${e.codigo} tiene un plazo límite vencido (${e.fechaLimite}).`,
         severidad: configVencido.severidadDefault,
       }));
@@ -244,6 +310,7 @@ export class AlertasService implements OnModuleInit {
       );
       const candidatos: CandidatoAlerta[] = proximos.map((e) => ({
         entidadId: e.id,
+        categoria: CategoriaAlerta.PLAZOS,
         mensaje: `El expediente ${e.codigo} tiene un plazo límite próximo (${e.fechaLimite}).`,
         severidad: configProximo.severidadDefault,
       }));
@@ -272,6 +339,9 @@ export class AlertasService implements OnModuleInit {
 
     const candidatos: CandidatoAlerta[] = documentos.map((d) => ({
       entidadId: d.id,
+      categoria: CategoriaAlerta.DOCUMENTOS,
+      expedienteId: d.expedienteId,
+      clienteId: d.clienteId,
       mensaje: `El documento "${d.nombreArchivo}" está vencido desde el ${d.fechaVencimiento}.`,
       severidad: config.severidadDefault,
     }));
@@ -300,6 +370,7 @@ export class AlertasService implements OnModuleInit {
     // ya que el modelo de datos original la vincula por expediente).
     const candidatos: CandidatoAlerta[] = requisitos.map((r) => ({
       entidadId: r.expedienteId,
+      categoria: CategoriaAlerta.REQUISITOS,
       mensaje: `El requisito "${r.nombreRequisito}" está pendiente y venció su fecha prometida (${r.fechaPrometida}).`,
       severidad: config.severidadDefault,
     }));
@@ -325,6 +396,9 @@ export class AlertasService implements OnModuleInit {
 
     const candidatos: CandidatoAlerta[] = facturas.map((f) => ({
       entidadId: f.id,
+      categoria: CategoriaAlerta.COBROS,
+      expedienteId: f.expedienteId,
+      clienteId: f.clienteId,
       mensaje: `La factura ${f.numero} está vencida desde el ${f.fechaVencimiento} con un saldo de ${formatearRD(Number(f.total) - Number(f.montoPagado))}.`,
       severidad: config.severidadDefault,
     }));
@@ -352,7 +426,10 @@ export class AlertasService implements OnModuleInit {
       const vencidos = eventosActivos.filter((e) => e.fechaHoraInicio < ahora);
       const candidatos: CandidatoAlerta[] = vencidos.map((e) => ({
         entidadId: e.id,
-        mensaje: `El evento "${e.titulo}" ya pasó su fecha/hora y no se ha marcado como completado.`,
+        categoria: categoriaDeEvento(e.tipo),
+        expedienteId: e.expedienteId,
+        clienteId: e.clienteId,
+        mensaje: `${etiquetaEvento(e.tipo)} "${e.titulo}" ya pasó su fecha/hora (${fechaLocal(e.fechaHoraInicio)}) y no se ha marcado como completado.`,
         severidad: configVencido.severidadDefault,
       }));
       const r = await this.sincronizar(TipoReglaAlerta.EVENTO_VENCIDO, 'agendaEventoId', candidatos);
@@ -370,7 +447,10 @@ export class AlertasService implements OnModuleInit {
       );
       const candidatos: CandidatoAlerta[] = proximos.map((e) => ({
         entidadId: e.id,
-        mensaje: `El evento "${e.titulo}" está próximo (${e.fechaHoraInicio.toISOString()}).`,
+        categoria: categoriaDeEvento(e.tipo),
+        expedienteId: e.expedienteId,
+        clienteId: e.clienteId,
+        mensaje: `${etiquetaEvento(e.tipo)} "${e.titulo}" está próximo (${fechaLocal(e.fechaHoraInicio)}).`,
         severidad: configProximo.severidadDefault,
       }));
       const r = await this.sincronizar(TipoReglaAlerta.EVENTO_PROXIMO, 'agendaEventoId', candidatos);
@@ -397,6 +477,18 @@ export class AlertasService implements OnModuleInit {
     const abiertasPorEntidad = new Map(abiertas.map((a) => [a[campo] ?? '', a]));
     const idsCandidatos = new Set(candidatos.map((c) => c.entidadId));
 
+    // Alertas ya abiertas: se completa su categoría/expediente si les faltaba.
+    for (const candidato of candidatos) {
+      const ya = abiertasPorEntidad.get(candidato.entidadId);
+      if (!ya) continue;
+      const cambios: Partial<Alerta> = {};
+      if (candidato.categoria && ya.categoria !== candidato.categoria) cambios.categoria = candidato.categoria;
+      const exp = campo === 'expedienteId' ? candidato.entidadId : candidato.expedienteId;
+      if (exp && ya.expedienteId !== exp) cambios.expedienteId = exp;
+      if (candidato.clienteId && ya.clienteId !== candidato.clienteId) cambios.clienteId = candidato.clienteId;
+      if (Object.keys(cambios).length) await this.alertaRepo.update(ya.id, cambios);
+    }
+
     let creadas = 0;
     const nuevas: Alerta[] = [];
     for (const candidato of candidatos) {
@@ -405,6 +497,9 @@ export class AlertasService implements OnModuleInit {
           tipoRegla,
           severidad: candidato.severidad,
           mensaje: candidato.mensaje,
+          categoria: candidato.categoria ?? CategoriaAlerta.OTROS,
+          expedienteId: campo === 'expedienteId' ? candidato.entidadId : candidato.expedienteId ?? undefined,
+          clienteId: candidato.clienteId ?? undefined,
           [campo]: candidato.entidadId,
         });
         const guardada = await this.alertaRepo.save(nueva);

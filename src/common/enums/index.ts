@@ -265,6 +265,20 @@ export enum TipoReglaAlerta {
   FACTURA_VENCIDA = 'factura_vencida',
 }
 
+/** Agrupación funcional de las alertas (qué tipo de asunto es). */
+export enum CategoriaAlerta {
+  AUDIENCIAS = 'audiencias',
+  REUNIONES = 'reuniones',
+  COBROS = 'cobros', // facturas por cobrar
+  PAGOS = 'pagos', // facturas / compromisos por pagar
+  DEPOSITOS = 'depositos', // subir / depositar expediente
+  PLAZOS = 'plazos',
+  DOCUMENTOS = 'documentos',
+  REQUISITOS = 'requisitos',
+  SEGUIMIENTO = 'seguimiento',
+  OTROS = 'otros',
+}
+
 export enum SeveridadAlerta {
   INFORMATIVA = 'informativa',
   ATENCION = 'atencion',
