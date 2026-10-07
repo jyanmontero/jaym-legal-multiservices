@@ -1,3 +1,4 @@
+import { formatearRD } from '../common/formato-moneda.js';
 import {
   Injectable,
   NotFoundException,
@@ -401,7 +402,7 @@ export class FacturacionService {
       const montoPagado = Number(factura.montoPagado);
       if (nuevoTotal < montoPagado) {
         throw new BadRequestException(
-          `El nuevo total (RD$ ${nuevoTotal.toFixed(2)}) no puede quedar por debajo del monto ya pagado (RD$ ${montoPagado.toFixed(2)}). Ajusta primero los pagos registrados.`,
+          `El nuevo total (${formatearRD(nuevoTotal)}) no puede quedar por debajo del monto ya pagado (${formatearRD(montoPagado)}). Ajusta primero los pagos registrados.`,
         );
       }
 
