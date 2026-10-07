@@ -35,9 +35,17 @@ export class ExpedienteRequisitosController {
     }
   }
 
+  /** Expedientes sin servicio del catálogo: asegura los requisitos base de su materia. */
+  private async completarMateria(expedienteId: string): Promise<void> {
+    const exp = await this.expedienteRepo.findOne({ where: { id: expedienteId } });
+    if (!exp || exp.servicioCodigo) return;
+    await this.requisitosService.asegurarRequisitosDeMateria(expedienteId, exp.materia);
+  }
+
   @Get()
   async listar(@Param('expedienteId') expedienteId: string, @CurrentUser() usuario: JwtPayloadUsuario) {
     await this.verificarVisibilidadExpediente(expedienteId, usuario);
+    await this.completarMateria(expedienteId);
     const lista = await this.requisitosService.listarPorExpediente(expedienteId);
     // La etiqueta «por validar» es solo para roles administrativos.
     if (ROLES_CON_VISIBILIDAD_TOTAL_EXPEDIENTES.includes(usuario.rol as RolUsuario)) return lista;
@@ -47,6 +55,7 @@ export class ExpedienteRequisitosController {
   @Get('progreso')
   async progreso(@Param('expedienteId') expedienteId: string, @CurrentUser() usuario: JwtPayloadUsuario) {
     await this.verificarVisibilidadExpediente(expedienteId, usuario);
+    await this.completarMateria(expedienteId);
     return this.requisitosService.calcularProgreso(expedienteId);
   }
 
