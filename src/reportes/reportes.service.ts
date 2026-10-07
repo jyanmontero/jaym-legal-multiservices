@@ -1,3 +1,4 @@
+import { formatearRD } from '../common/formato-moneda.js';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
@@ -29,8 +30,7 @@ function nombreCliente(cliente?: Cliente | null): string {
 }
 
 function formatoRD(valor: number | string): string {
-  const n = typeof valor === 'string' ? Number(valor) : valor;
-  return `RD$ ${n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return formatearRD(valor);
 }
 
 function formatoFecha(valor?: string | Date | null): string {

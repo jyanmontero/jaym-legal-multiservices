@@ -1,3 +1,4 @@
+import { formatearMonto } from '../common/formato-moneda.js';
 /**
  * Catálogo de plantillas de documentos — sección "venta de contratos y
  * traducciones" de la hoja de ruta.
@@ -505,7 +506,11 @@ export function camposFaltantes(plantilla: PlantillaDocumento, datos: Record<str
 export function renderizarCuerpo(plantilla: PlantillaDocumento, datos: Record<string, string>): string {
   let texto = plantilla.cuerpo;
   for (const campo of plantilla.campos) {
-    const valor = String(datos?.[campo.clave] ?? '').trim() || `[${campo.etiqueta}]`;
+    let valor = String(datos?.[campo.clave] ?? '').trim() || `[${campo.etiqueta}]`;
+    // Los campos numéricos en RD$ se imprimen como 1,000,000.00 en el documento.
+    if (campo.tipo === 'numero' && campo.etiqueta.includes('RD$') && /^[\d,]+(\.\d+)?$/.test(valor)) {
+      valor = formatearMonto(valor);
+    }
     texto = texto.split(`{{${campo.clave}}}`).join(valor);
   }
   return texto;

@@ -1,3 +1,4 @@
+import { formatearRD } from '../../common/formato-moneda.js';
 import { Injectable } from '@nestjs/common';
 import pdfMake from 'pdfmake';
 import { Cliente } from '../../clientes/cliente.entity.js';
@@ -37,8 +38,7 @@ pdfMake.setUrlAccessPolicy(() => false);
 pdfMake.setLocalAccessPolicy((ruta: string) => FUENTES_PERMITIDAS.has(ruta));
 
 function formatoRD(valor: number | string): string {
-  const n = typeof valor === 'string' ? Number(valor) : valor;
-  return `RD$ ${n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return formatearRD(valor);
 }
 
 function nombreCliente(cliente: Cliente): string {

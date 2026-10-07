@@ -1,3 +1,4 @@
+import { formatearMonto } from '../common/formato-moneda.js';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -68,7 +69,7 @@ export class MarketingService {
       datos.habitaciones != null && `Habitaciones: ${datos.habitaciones}`,
       datos.banos != null && `Baños: ${datos.banos}`,
       datos.metrosCuadrados != null && `Metros cuadrados: ${datos.metrosCuadrados} m²`,
-      `Precio: ${datos.moneda}${Number(datos.precio).toLocaleString('es-DO')}`,
+      `Precio: ${datos.moneda}${formatearMonto(datos.precio)}`,
       datos.notas && `Notas adicionales: ${datos.notas}`,
       datos.contacto && `Forma de contacto a incluir: ${datos.contacto}`,
     ]

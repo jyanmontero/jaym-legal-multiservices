@@ -1,3 +1,4 @@
+import { formatearRD } from '../common/formato-moneda.js';
 import { ForbiddenException, Injectable, NotFoundException, OnModuleInit, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, In, LessThan, Repository } from 'typeorm';
@@ -324,7 +325,7 @@ export class AlertasService implements OnModuleInit {
 
     const candidatos: CandidatoAlerta[] = facturas.map((f) => ({
       entidadId: f.id,
-      mensaje: `La factura ${f.numero} está vencida desde el ${f.fechaVencimiento} con un saldo de RD$ ${(Number(f.total) - Number(f.montoPagado)).toFixed(2)}.`,
+      mensaje: `La factura ${f.numero} está vencida desde el ${f.fechaVencimiento} con un saldo de ${formatearRD(Number(f.total) - Number(f.montoPagado))}.`,
       severidad: config.severidadDefault,
     }));
 
