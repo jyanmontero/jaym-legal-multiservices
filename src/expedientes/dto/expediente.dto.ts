@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString, IsUUID, IsArray, IsDateString, ValidateIf } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsUUID, IsArray, IsDateString, ValidateIf, IsObject } from 'class-validator';
 import { MateriaJuridica, EstadoExpediente, NivelPrioridad, NivelRiesgo } from '../../common/enums/index.js';
 
 export class CreateExpedienteDto {
@@ -19,6 +19,14 @@ export class CreateExpedienteDto {
   @IsOptional()
   @IsString()
   tipoServicio?: string;
+
+  @IsOptional()
+  @IsString()
+  servicioCodigo?: string;
+
+  @IsOptional()
+  @IsObject()
+  perfil?: Record<string, boolean>;
 
   @IsOptional()
   @IsString()
@@ -105,6 +113,19 @@ export class UpdateExpedienteDto {
 
   // Motivo del cambio — no obligatorio, pero recomendado y se guarda en el
   // historial cuando se provee (sección 7).
+  @IsOptional()
+  @IsString()
+  motivo?: string;
+}
+
+export class CambiarServicioDto {
+  @IsString()
+  servicioCodigo: string;
+
+  @IsOptional()
+  @IsObject()
+  perfil?: Record<string, boolean>;
+
   @IsOptional()
   @IsString()
   motivo?: string;

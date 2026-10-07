@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { RequisitoPlantilla } from './requisito-plantilla.entity.js';
 import { CreateRequisitoPlantillaDto, UpdateRequisitoPlantillaDto } from './dto/requisito.dto.js';
 import { MateriaJuridica } from '../common/enums/index.js';
@@ -31,7 +31,7 @@ export class RequisitosPlantillaService {
 
   async listarPorMateria(materia: MateriaJuridica): Promise<RequisitoPlantilla[]> {
     return this.plantillaRepo.find({
-      where: { materia, activo: true },
+      where: { materia, activo: true, general: false, servicioCodigo: IsNull() },
       order: { orden: 'ASC' },
     });
   }

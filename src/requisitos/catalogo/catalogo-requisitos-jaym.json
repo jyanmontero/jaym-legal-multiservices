@@ -1,0 +1,3624 @@
+{
+  "version": "2026-10-06",
+  "aviso": "Catálogo base de requisitos por servicio. Las bases legales marcadas 'verificada' se confirmaron en fuentes en esta revisión; las marcadas 'por_validar' y los requisitos con validar=true requieren el visto bueno del abogado responsable antes de activarse. No sustituye la lista vigente de cada institución.",
+  "perfilPreguntas": {
+    "hijos_menores": "¿Hay hijos menores de edad involucrados?",
+    "conyuge_en_exterior": "¿Algún cónyuge reside fuera del país?",
+    "documentos_del_exterior": "¿Algún documento fue emitido en el exterior o está en otro idioma?",
+    "cliente_extranjero": "¿El cliente es extranjero?",
+    "persona_juridica": "¿Alguna de las partes es una empresa?",
+    "hay_contraparte": "¿Hay una contraparte (demandado, otro cónyuge, deudor, etc.)?",
+    "actua_por_poder": "¿El cliente actuará mediante apoderado?"
+  },
+  "generales": [
+    {
+      "id": "general.datos_personales_completos_del_cliente_nombres_n",
+      "orden": 1,
+      "nombre": "Datos personales completos del cliente (nombres, nacionalidad, estado civil, ocupación, dirección, teléfono y correo)",
+      "tipo": "dato",
+      "categoria": null,
+      "aporta": "cliente",
+      "obligatorio": true,
+      "condicion": null,
+      "validar": false,
+      "nota": null
+    },
+    {
+      "id": "general.cedula_o_pasaporte_vigente_del_cliente_copia_leg",
+      "orden": 2,
+      "nombre": "Cédula o pasaporte vigente del cliente (copia legible)",
+      "tipo": "documento",
+      "categoria": "identificacion",
+      "aporta": "cliente",
+      "obligatorio": true,
+      "condicion": null,
+      "validar": false,
+      "nota": null
+    },
+    {
+      "id": "general.contrato_de_servicios_y_honorarios_firmado",
+      "orden": 3,
+      "nombre": "Contrato de servicios y honorarios firmado",
+      "tipo": "documento",
+      "categoria": "contratos",
+      "aporta": "firma",
+      "obligatorio": true,
+      "condicion": null,
+      "validar": false,
+      "nota": null
+    },
+    {
+      "id": "general.pago_inicial_o_anticipo_registrado",
+      "orden": 4,
+      "nombre": "Pago inicial o anticipo registrado",
+      "tipo": "accion",
+      "categoria": null,
+      "aporta": "cliente",
+      "obligatorio": true,
+      "condicion": null,
+      "validar": false,
+      "nota": null
+    },
+    {
+      "id": "general.poder_especial_de_representacion_firmado_y_legal",
+      "orden": 5,
+      "nombre": "Poder especial de representación firmado y legalizado",
+      "tipo": "documento",
+      "categoria": "poderes",
+      "aporta": "firma",
+      "obligatorio": true,
+      "condicion": null,
+      "validar": false,
+      "nota": "Marcar 'no aplica' si el trámite lo realiza el cliente personalmente."
+    },
+    {
+      "id": "general.direccion_de_la_contraparte_confirmada",
+      "orden": 6,
+      "nombre": "Dirección de la contraparte confirmada",
+      "tipo": "dato",
+      "categoria": null,
+      "aporta": "cliente",
+      "obligatorio": true,
+      "condicion": "hay_contraparte",
+      "validar": false,
+      "nota": null
+    }
+  ],
+  "areas": [
+    {
+      "numero": 1,
+      "area": "Constitución y servicios corporativos",
+      "materia": "corporativo",
+      "servicios": [
+        {
+          "id": "corporativo.constitucion_de_sociedad_de_responsabilidad_limi",
+          "nombre": "Constitución de sociedad de responsabilidad limitada (SRL)",
+          "materia": "corporativo",
+          "baseLegal": [
+            {
+              "texto": "Ley 479-08 (Ley General de Sociedades Comerciales y EIRL), modificada por la Ley 31-11",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Ley 3-02 sobre Registro Mercantil",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Ley 11-92, Código Tributario (inscripción en el RNC)",
+              "estado": "verificada"
+            }
+          ],
+          "competencia": "Cámara de Comercio y Producción del domicilio social (Registro Mercantil); DGII (RNC); ONAPI (nombre comercial)",
+          "etapas": [
+            "Verificar y registrar el nombre comercial en ONAPI",
+            "Redactar estatutos y acta de asamblea general constitutiva",
+            "Depositar en la Cámara de Comercio y obtener el Registro Mercantil",
+            "Inscribir la sociedad en la DGII (RNC)"
+          ],
+          "preguntas": [
+            "cliente_extranjero",
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "corporativo.constitucion_de_sociedad_de_responsabilidad_limi.01",
+              "orden": 1,
+              "nombre": "Certificado de nombre comercial (ONAPI)",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": "La DGII lo trata como opcional para el RNC; la Cámara de Comercio lo solicita. Confirmar con la Cámara del domicilio."
+            },
+            {
+              "id": "corporativo.constitucion_de_sociedad_de_responsabilidad_limi.02",
+              "orden": 2,
+              "nombre": "Estatutos sociales",
+              "tipo": "documento",
+              "categoria": "contratos",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "corporativo.constitucion_de_sociedad_de_responsabilidad_limi.03",
+              "orden": 3,
+              "nombre": "Acta de asamblea general constitutiva",
+              "tipo": "documento",
+              "categoria": "contratos",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "corporativo.constitucion_de_sociedad_de_responsabilidad_limi.04",
+              "orden": 4,
+              "nombre": "Copia de cédula o pasaporte de cada socio y del gerente",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "corporativo.constitucion_de_sociedad_de_responsabilidad_limi.05",
+              "orden": 5,
+              "nombre": "Documentos de socios extranjeros apostillados o legalizados y traducidos por intérprete judicial",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": "documentos_del_exterior",
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "corporativo.constitucion_de_sociedad_de_responsabilidad_limi.06",
+              "orden": 6,
+              "nombre": "Formulario de solicitud de Registro Mercantil",
+              "tipo": "documento",
+              "categoria": "formularios",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "corporativo.constitucion_de_sociedad_de_responsabilidad_limi.07",
+              "orden": 7,
+              "nombre": "Comprobante de pago de impuestos de constitución (DGII) y tasas de la Cámara de Comercio",
+              "tipo": "documento",
+              "categoria": "recibos",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "corporativo.constitucion_de_sociedad_de_responsabilidad_limi.08",
+              "orden": 8,
+              "nombre": "Certificado de Registro Mercantil",
+              "tipo": "entregable",
+              "categoria": "certificaciones",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "corporativo.constitucion_de_sociedad_de_responsabilidad_limi.09",
+              "orden": 9,
+              "nombre": "Constancia de inscripción en el RNC (DGII)",
+              "tipo": "entregable",
+              "categoria": "certificaciones",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "corporativo.constitucion_de_empresa_individual_de_responsabi",
+          "nombre": "Constitución de empresa individual de responsabilidad limitada (EIRL)",
+          "materia": "corporativo",
+          "baseLegal": [
+            {
+              "texto": "Ley 479-08, modificada por la Ley 31-11",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Ley 3-02 sobre Registro Mercantil",
+              "estado": "verificada"
+            }
+          ],
+          "competencia": "Cámara de Comercio y Producción del domicilio; DGII; ONAPI",
+          "etapas": [
+            "Registrar nombre comercial (ONAPI)",
+            "Redactar el acto constitutivo",
+            "Registro Mercantil",
+            "RNC en la DGII"
+          ],
+          "preguntas": [
+            "cliente_extranjero",
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "corporativo.constitucion_de_empresa_individual_de_responsabi.01",
+              "orden": 1,
+              "nombre": "Certificado de nombre comercial (ONAPI)",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "corporativo.constitucion_de_empresa_individual_de_responsabi.02",
+              "orden": 2,
+              "nombre": "Acto constitutivo de la EIRL redactado por abogado",
+              "tipo": "documento",
+              "categoria": "contratos",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "corporativo.constitucion_de_empresa_individual_de_responsabi.03",
+              "orden": 3,
+              "nombre": "Copia de cédula o pasaporte del titular",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "corporativo.constitucion_de_empresa_individual_de_responsabi.04",
+              "orden": 4,
+              "nombre": "Formulario de solicitud de Registro Mercantil",
+              "tipo": "documento",
+              "categoria": "formularios",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "corporativo.constitucion_de_empresa_individual_de_responsabi.05",
+              "orden": 5,
+              "nombre": "Comprobante de pago de impuestos de constitución y tasas",
+              "tipo": "documento",
+              "categoria": "recibos",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "corporativo.constitucion_de_empresa_individual_de_responsabi.06",
+              "orden": 6,
+              "nombre": "Certificado de Registro Mercantil",
+              "tipo": "entregable",
+              "categoria": "certificaciones",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "corporativo.constitucion_de_empresa_individual_de_responsabi.07",
+              "orden": 7,
+              "nombre": "Constancia de inscripción en el RNC (DGII)",
+              "tipo": "entregable",
+              "categoria": "certificaciones",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "corporativo.constitucion_de_sociedad_anonima_sa",
+          "nombre": "Constitución de sociedad anónima (SA)",
+          "materia": "corporativo",
+          "baseLegal": [
+            {
+              "texto": "Ley 479-08, modificada por la Ley 31-11",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Requisitos específicos de la SA (suscripción y pago del capital, órganos de administración y fiscalización)",
+              "estado": "por_validar"
+            }
+          ],
+          "competencia": "Cámara de Comercio y Producción del domicilio; DGII; ONAPI",
+          "etapas": [
+            "Registrar nombre comercial (ONAPI)",
+            "Estatutos y asamblea constitutiva",
+            "Registro Mercantil",
+            "RNC"
+          ],
+          "preguntas": [
+            "cliente_extranjero",
+            "persona_juridica",
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "corporativo.constitucion_de_sociedad_anonima_sa.01",
+              "orden": 1,
+              "nombre": "Certificado de nombre comercial (ONAPI)",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "corporativo.constitucion_de_sociedad_anonima_sa.02",
+              "orden": 2,
+              "nombre": "Estatutos sociales",
+              "tipo": "documento",
+              "categoria": "contratos",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "corporativo.constitucion_de_sociedad_anonima_sa.03",
+              "orden": 3,
+              "nombre": "Acta de asamblea constitutiva, con lista de suscriptores y constancia de pago del capital",
+              "tipo": "documento",
+              "categoria": "contratos",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "corporativo.constitucion_de_sociedad_anonima_sa.04",
+              "orden": 4,
+              "nombre": "Designación de los miembros del consejo de administración y del comisario de cuentas",
+              "tipo": "documento",
+              "categoria": "contratos",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "corporativo.constitucion_de_sociedad_anonima_sa.05",
+              "orden": 5,
+              "nombre": "Copia de cédula o pasaporte de accionistas y administradores",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "corporativo.constitucion_de_sociedad_anonima_sa.06",
+              "orden": 6,
+              "nombre": "Documentos de accionistas extranjeros o jurídicos apostillados/legalizados y traducidos",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": "documentos_del_exterior",
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "corporativo.constitucion_de_sociedad_anonima_sa.07",
+              "orden": 7,
+              "nombre": "Certificado de Registro Mercantil",
+              "tipo": "entregable",
+              "categoria": "certificaciones",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "corporativo.constitucion_de_sociedad_anonima_sa.08",
+              "orden": 8,
+              "nombre": "Constancia de inscripción en el RNC (DGII)",
+              "tipo": "entregable",
+              "categoria": "certificaciones",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "corporativo.asambleas_y_modificaciones_estatutarias",
+          "nombre": "Asambleas y modificaciones estatutarias",
+          "materia": "corporativo",
+          "baseLegal": [
+            {
+              "texto": "Ley 479-08, modificada por la Ley 31-11",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Plazos y quórum aplicables a cada tipo de asamblea",
+              "estado": "por_validar"
+            }
+          ],
+          "competencia": "Cámara de Comercio y Producción del domicilio social",
+          "etapas": [
+            "Convocatoria",
+            "Celebración de la asamblea y redacción del acta",
+            "Depósito y registro en la Cámara de Comercio"
+          ],
+          "preguntas": [
+            "persona_juridica"
+          ],
+          "requisitos": [
+            {
+              "id": "corporativo.asambleas_y_modificaciones_estatutarias.01",
+              "orden": 1,
+              "nombre": "Certificado de Registro Mercantil vigente",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "corporativo.asambleas_y_modificaciones_estatutarias.02",
+              "orden": 2,
+              "nombre": "Estatutos vigentes de la sociedad",
+              "tipo": "documento",
+              "categoria": "contratos",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "corporativo.asambleas_y_modificaciones_estatutarias.03",
+              "orden": 3,
+              "nombre": "Convocatoria a la asamblea",
+              "tipo": "documento",
+              "categoria": "correspondencias",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "corporativo.asambleas_y_modificaciones_estatutarias.04",
+              "orden": 4,
+              "nombre": "Lista de presentes y representados",
+              "tipo": "documento",
+              "categoria": "formularios",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "corporativo.asambleas_y_modificaciones_estatutarias.05",
+              "orden": 5,
+              "nombre": "Acta de asamblea firmada",
+              "tipo": "documento",
+              "categoria": "contratos",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "corporativo.asambleas_y_modificaciones_estatutarias.06",
+              "orden": 6,
+              "nombre": "Estatutos modificados (si aplica)",
+              "tipo": "documento",
+              "categoria": "contratos",
+              "aporta": "firma",
+              "obligatorio": false,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "corporativo.asambleas_y_modificaciones_estatutarias.07",
+              "orden": 7,
+              "nombre": "Comprobante de depósito y registro en la Cámara de Comercio",
+              "tipo": "entregable",
+              "categoria": "recibos",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "corporativo.asesoria_societaria",
+          "nombre": "Asesoría societaria",
+          "materia": "corporativo",
+          "baseLegal": [
+            {
+              "texto": "Ley 479-08, modificada por la Ley 31-11",
+              "estado": "verificada"
+            }
+          ],
+          "competencia": "No aplica (consulta y acompañamiento)",
+          "etapas": [
+            "Consulta",
+            "Informe u opinión escrita"
+          ],
+          "preguntas": [
+            "persona_juridica"
+          ],
+          "requisitos": [
+            {
+              "id": "corporativo.asesoria_societaria.01",
+              "orden": 1,
+              "nombre": "Documentos societarios vigentes de la empresa (Registro Mercantil, estatutos, últimas actas)",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": false,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "corporativo.asesoria_societaria.02",
+              "orden": 2,
+              "nombre": "Informe u opinión legal entregada al cliente",
+              "tipo": "entregable",
+              "categoria": "informes",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "numero": 2,
+      "area": "Gestión inmobiliaria y títulos",
+      "materia": "inmobiliario",
+      "servicios": [
+        {
+          "id": "inmobiliario.transferencia_de_inmueble_por_compraventa_regist",
+          "nombre": "Transferencia de inmueble por compraventa (Registro de Títulos)",
+          "materia": "inmobiliario",
+          "baseLegal": [
+            {
+              "texto": "Ley 108-05 de Registro Inmobiliario",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Ley 140-15 del Notariado (firmas legalizadas del contrato)",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Reglamento General de Registro de Títulos (el Registrador debe pronunciarse en un plazo no mayor de 30 días hábiles)",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Impuesto de Transferencia Inmobiliaria: las fuentes consultadas indican 3% sobre el mayor valor entre el precio del contrato y la tasación de la DGII, y citan leyes distintas (173-07 y 288-04); confirmar tasa y base legal vigentes con la DGII",
+              "estado": "por_validar"
+            }
+          ],
+          "competencia": "Registro de Títulos de la jurisdicción donde está el inmueble",
+          "etapas": [
+            "Certificación del estado jurídico del inmueble",
+            "Contrato de compraventa (y promesa de venta si procede) con firmas legalizadas",
+            "Pago del Impuesto de Transferencia Inmobiliaria en la DGII",
+            "Depósito en el Registro de Títulos",
+            "Emisión del nuevo certificado de título"
+          ],
+          "preguntas": [
+            "persona_juridica",
+            "cliente_extranjero",
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "inmobiliario.transferencia_de_inmueble_por_compraventa_regist.01",
+              "orden": 1,
+              "nombre": "Duplicado del dueño del certificado de título (original)",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.transferencia_de_inmueble_por_compraventa_regist.02",
+              "orden": 2,
+              "nombre": "Contrato de compraventa con firmas legalizadas por notario",
+              "tipo": "documento",
+              "categoria": "contratos",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.transferencia_de_inmueble_por_compraventa_regist.03",
+              "orden": 3,
+              "nombre": "Cédulas o pasaportes de vendedor y comprador (y de sus cónyuges, si aplica)",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.transferencia_de_inmueble_por_compraventa_regist.04",
+              "orden": 4,
+              "nombre": "Comprobante de pago del Impuesto de Transferencia Inmobiliaria",
+              "tipo": "documento",
+              "categoria": "recibos",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.transferencia_de_inmueble_por_compraventa_regist.05",
+              "orden": 5,
+              "nombre": "Instancia de solicitud de registro ante el Registro de Títulos",
+              "tipo": "documento",
+              "categoria": "instancias",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.transferencia_de_inmueble_por_compraventa_regist.06",
+              "orden": 6,
+              "nombre": "Certificación del estado jurídico del inmueble",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "firma",
+              "obligatorio": false,
+              "condicion": null,
+              "validar": false,
+              "nota": "Recomendada como debida diligencia antes de pagar o firmar."
+            },
+            {
+              "id": "inmobiliario.transferencia_de_inmueble_por_compraventa_regist.07",
+              "orden": 7,
+              "nombre": "Certificación de la DGII de no deuda del Impuesto al Patrimonio Inmobiliario (IPI)",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.transferencia_de_inmueble_por_compraventa_regist.08",
+              "orden": 8,
+              "nombre": "Registro Mercantil y acta de asamblea que autoriza la operación (si alguna parte es sociedad)",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": "persona_juridica",
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.transferencia_de_inmueble_por_compraventa_regist.09",
+              "orden": 9,
+              "nombre": "Comprobantes de las tasas por servicios del Poder Judicial y del Colegio de Abogados",
+              "tipo": "documento",
+              "categoria": "recibos",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.transferencia_de_inmueble_por_compraventa_regist.10",
+              "orden": 10,
+              "nombre": "Nuevo certificado de título a nombre del comprador",
+              "tipo": "entregable",
+              "categoria": "certificaciones",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "inmobiliario.determinacion_de_herederos_y_particion_de_inmueb",
+          "nombre": "Determinación de herederos y partición de inmuebles registrados (Tribunal de Tierras)",
+          "materia": "inmobiliario",
+          "baseLegal": [
+            {
+              "texto": "Ley 108-05, art. 57: el Tribunal de Jurisdicción Original conoce la determinación de herederos cuando se solicita conjuntamente con la partición de inmuebles registrados",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Reglamento de los Tribunales Superiores de Tierras y de Jurisdicción Original, art. 40 (requisitos de la solicitud)",
+              "estado": "verificada"
+            }
+          ],
+          "competencia": "Tribunal de Tierras de Jurisdicción Original (con ejecución posterior en el Registro de Títulos)",
+          "etapas": [
+            "Reunir actas y acto de notoriedad",
+            "Solicitar nuevo duplicado del certificado de título si los herederos no lo poseen",
+            "Instancia de determinación de herederos y partición ante el Tribunal de Jurisdicción Original",
+            "Decisión del tribunal",
+            "Ejecución en el Registro de Títulos"
+          ],
+          "preguntas": [
+            "hay_contraparte",
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "inmobiliario.determinacion_de_herederos_y_particion_de_inmueb.01",
+              "orden": 1,
+              "nombre": "Copia certificada del acta de defunción del titular (causante)",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.determinacion_de_herederos_y_particion_de_inmueb.02",
+              "orden": 2,
+              "nombre": "Acto de notoriedad que haga constar la calidad de herederos",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.determinacion_de_herederos_y_particion_de_inmueb.03",
+              "orden": 3,
+              "nombre": "Actas de nacimiento (y de matrimonio, si aplica) de los herederos",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.determinacion_de_herederos_y_particion_de_inmueb.04",
+              "orden": 4,
+              "nombre": "Cédulas o pasaportes de los herederos",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.determinacion_de_herederos_y_particion_de_inmueb.05",
+              "orden": 5,
+              "nombre": "Duplicado del dueño del certificado de título, o solicitud de nuevo duplicado al Registro de Títulos si los herederos no lo poseen",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.determinacion_de_herederos_y_particion_de_inmueb.06",
+              "orden": 6,
+              "nombre": "Instancia de determinación de herederos y partición",
+              "tipo": "documento",
+              "categoria": "instancias",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.determinacion_de_herederos_y_particion_de_inmueb.07",
+              "orden": 7,
+              "nombre": "Poder de los herederos a favor de la firma",
+              "tipo": "documento",
+              "categoria": "poderes",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.determinacion_de_herederos_y_particion_de_inmueb.08",
+              "orden": 8,
+              "nombre": "Certificación del estado jurídico del inmueble",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "firma",
+              "obligatorio": false,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.determinacion_de_herederos_y_particion_de_inmueb.09",
+              "orden": 9,
+              "nombre": "Declaración y pago de impuestos sucesorales ante la DGII",
+              "tipo": "accion",
+              "categoria": null,
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.determinacion_de_herederos_y_particion_de_inmueb.10",
+              "orden": 10,
+              "nombre": "Decisión del tribunal sobre determinación de herederos y partición",
+              "tipo": "entregable",
+              "categoria": "sentencias",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "inmobiliario.transferencia_por_sucesion_de_unico_heredero_reg",
+          "nombre": "Transferencia por sucesión de único heredero (Registro de Títulos)",
+          "materia": "inmobiliario",
+          "baseLegal": [
+            {
+              "texto": "Guía de trámites de la Dirección Nacional de Registro de Títulos: «Transferencia por sucesión de único heredero»",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Ley 108-05 de Registro Inmobiliario",
+              "estado": "verificada"
+            }
+          ],
+          "competencia": "Registro de Títulos de la jurisdicción del inmueble (previa decisión de un tribunal civil que declare al único heredero)",
+          "etapas": [
+            "Obtener la decisión judicial que acoge la determinación del heredero",
+            "Verificar ejecutoriedad",
+            "Depositar la instancia en el Registro de Títulos"
+          ],
+          "preguntas": [
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "inmobiliario.transferencia_por_sucesion_de_unico_heredero_reg.01",
+              "orden": 1,
+              "nombre": "Original o copia certificada de la decisión judicial que acoge la determinación de heredero",
+              "tipo": "documento",
+              "categoria": "sentencias",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.transferencia_por_sucesion_de_unico_heredero_reg.02",
+              "orden": 2,
+              "nombre": "Instancia motivada que describe el inmueble y solicita la transferencia",
+              "tipo": "documento",
+              "categoria": "instancias",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.transferencia_por_sucesion_de_unico_heredero_reg.03",
+              "orden": 3,
+              "nombre": "Copia del acta de nacimiento del único heredero reconocido en la decisión",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.transferencia_por_sucesion_de_unico_heredero_reg.04",
+              "orden": 4,
+              "nombre": "Copia del acta de defunción del titular registral",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.transferencia_por_sucesion_de_unico_heredero_reg.05",
+              "orden": 5,
+              "nombre": "Duplicado o extracto del certificado de título, o constancia anotada transferible",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.transferencia_por_sucesion_de_unico_heredero_reg.06",
+              "orden": 6,
+              "nombre": "Documentos que demuestren la ejecutoriedad de la decisión (acto de alguacil de notificación y certificación de no recurso), si aplica",
+              "tipo": "documento",
+              "categoria": "actos_alguacil",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.transferencia_por_sucesion_de_unico_heredero_reg.07",
+              "orden": 7,
+              "nombre": "Copias de los documentos de identidad de las partes",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.transferencia_por_sucesion_de_unico_heredero_reg.08",
+              "orden": 8,
+              "nombre": "Comprobantes de pago de las tasas por servicios",
+              "tipo": "documento",
+              "categoria": "recibos",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "inmobiliario.regularizacion_deslinde_y_saneamiento_de_titulos",
+          "nombre": "Regularización, deslinde y saneamiento de títulos de propiedad",
+          "materia": "inmobiliario",
+          "baseLegal": [
+            {
+              "texto": "Ley 108-05 de Registro Inmobiliario (saneamiento catastral y deslinde)",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Requisitos técnicos de Mensuras Catastrales para cada procedimiento",
+              "estado": "por_validar"
+            }
+          ],
+          "competencia": "Jurisdicción Inmobiliaria (Mensuras Catastrales, Tribunal de Tierras y Registro de Títulos según el procedimiento)",
+          "etapas": [
+            "Estudio del estado jurídico y catastral del inmueble",
+            "Mensura a cargo de agrimensor",
+            "Autorización y aprobación técnica",
+            "Procedimiento ante el tribunal o registro correspondiente"
+          ],
+          "preguntas": [
+            "hay_contraparte"
+          ],
+          "requisitos": [
+            {
+              "id": "inmobiliario.regularizacion_deslinde_y_saneamiento_de_titulos.01",
+              "orden": 1,
+              "nombre": "Certificado de título o constancia anotada (o documentos que acrediten la posesión, si no hay título)",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.regularizacion_deslinde_y_saneamiento_de_titulos.02",
+              "orden": 2,
+              "nombre": "Contrato con agrimensor y plano o mensura aprobados",
+              "tipo": "documento",
+              "categoria": "informes",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.regularizacion_deslinde_y_saneamiento_de_titulos.03",
+              "orden": 3,
+              "nombre": "Cédulas de los propietarios o poseedores",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.regularizacion_deslinde_y_saneamiento_de_titulos.04",
+              "orden": 4,
+              "nombre": "Constancia de pago de impuestos del inmueble (IPI, si aplica)",
+              "tipo": "documento",
+              "categoria": "recibos",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "inmobiliario.regularizacion_deslinde_y_saneamiento_de_titulos.05",
+              "orden": 5,
+              "nombre": "Pruebas de posesión (si es saneamiento)",
+              "tipo": "documento",
+              "categoria": "pruebas",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "numero": 3,
+      "area": "Trámites ante la Junta Central Electoral (JCE)",
+      "materia": "registro_civil_jce",
+      "servicios": [
+        {
+          "id": "registro_civil_jce.rectificacion_de_actas_del_estado_civil",
+          "nombre": "Rectificación de actas del estado civil",
+          "materia": "registro_civil_jce",
+          "baseLegal": [
+            {
+              "texto": "Ley 4-23 Orgánica de los Actos del Estado Civil (promulgada el 18-ene-2023; deroga la Ley 659 de 1944)",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Reglamento de Rectificación de Actas del Estado Civil (Tribunal Superior Electoral)",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Competencia vigente (corrección administrativa en la JCE vs. rectificación jurisdiccional ante el TSE según el tipo de error): validar con la Ley 4-23 y el reglamento del TSE",
+              "estado": "por_validar"
+            }
+          ],
+          "competencia": "Presidencia de la JCE (vía administrativa) o Tribunal Superior Electoral (vía jurisdiccional), según el caso",
+          "etapas": [
+            "Identificar el error y la vía",
+            "Reunir pruebas del dato correcto",
+            "Instancia motivada",
+            "Seguimiento y retiro del acta rectificada"
+          ],
+          "preguntas": [
+            "hay_contraparte",
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "registro_civil_jce.rectificacion_de_actas_del_estado_civil.01",
+              "orden": 1,
+              "nombre": "Copia certificada del acta que se desea rectificar",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "registro_civil_jce.rectificacion_de_actas_del_estado_civil.02",
+              "orden": 2,
+              "nombre": "Documentos que prueben el dato correcto (actas de los padres, cédulas, certificado de nacido vivo, certificaciones escolares o médicas)",
+              "tipo": "documento",
+              "categoria": "pruebas",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "registro_civil_jce.rectificacion_de_actas_del_estado_civil.03",
+              "orden": 3,
+              "nombre": "Instancia motivada dirigida a la Presidencia de la JCE o al TSE según la vía",
+              "tipo": "documento",
+              "categoria": "instancias",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "registro_civil_jce.rectificacion_de_actas_del_estado_civil.04",
+              "orden": 4,
+              "nombre": "Acta rectificada o resolución",
+              "tipo": "entregable",
+              "categoria": "resoluciones",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "registro_civil_jce.nulidad_de_actas_y_actas_duplicadas",
+          "nombre": "Nulidad de actas y actas duplicadas",
+          "materia": "registro_civil_jce",
+          "baseLegal": [
+            {
+              "texto": "Ley 4-23 Orgánica de los Actos del Estado Civil (promulgada el 18-ene-2023; deroga la Ley 659 de 1944)",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Procedimiento y competencia para la nulidad de actas duplicadas",
+              "estado": "por_validar"
+            }
+          ],
+          "competencia": "JCE / Tribunal competente según el caso",
+          "etapas": [
+            "Identificar las actas duplicadas",
+            "Pruebas",
+            "Instancia o demanda",
+            "Decisión y anotación en el Registro Civil"
+          ],
+          "preguntas": [
+            "hay_contraparte"
+          ],
+          "requisitos": [
+            {
+              "id": "registro_civil_jce.nulidad_de_actas_y_actas_duplicadas.01",
+              "orden": 1,
+              "nombre": "Copias certificadas de todas las actas involucradas",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "registro_civil_jce.nulidad_de_actas_y_actas_duplicadas.02",
+              "orden": 2,
+              "nombre": "Certificación o constancia de la JCE sobre la duplicidad",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "registro_civil_jce.nulidad_de_actas_y_actas_duplicadas.03",
+              "orden": 3,
+              "nombre": "Pruebas que sustenten cuál acta debe prevalecer",
+              "tipo": "documento",
+              "categoria": "pruebas",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "registro_civil_jce.nulidad_de_actas_y_actas_duplicadas.04",
+              "orden": 4,
+              "nombre": "Instancia o demanda",
+              "tipo": "documento",
+              "categoria": "instancias",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "registro_civil_jce.nulidad_de_actas_y_actas_duplicadas.05",
+              "orden": 5,
+              "nombre": "Decisión o resolución",
+              "tipo": "entregable",
+              "categoria": "resoluciones",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "registro_civil_jce.revalidacion_de_declaracion_de_nacimiento_y_decl",
+          "nombre": "Revalidación de declaración de nacimiento y declaración tardía",
+          "materia": "registro_civil_jce",
+          "baseLegal": [
+            {
+              "texto": "Ley 4-23 Orgánica de los Actos del Estado Civil (promulgada el 18-ene-2023; deroga la Ley 659 de 1944)",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Requisitos documentales actuales de la JCE para declaraciones tardías y revalidaciones",
+              "estado": "por_validar"
+            }
+          ],
+          "competencia": "Oficialía del Estado Civil / Dirección Nacional de Registro del Estado Civil (JCE)",
+          "etapas": [
+            "Reunir documentos del declarante y de los padres",
+            "Solicitud ante la JCE",
+            "Seguimiento",
+            "Retiro del acta"
+          ],
+          "preguntas": [
+            "cliente_extranjero",
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "registro_civil_jce.revalidacion_de_declaracion_de_nacimiento_y_decl.01",
+              "orden": 1,
+              "nombre": "Cédula del declarante (o documento de identidad)",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "registro_civil_jce.revalidacion_de_declaracion_de_nacimiento_y_decl.02",
+              "orden": 2,
+              "nombre": "Certificado de nacido vivo o constancia del centro de salud o partera",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "registro_civil_jce.revalidacion_de_declaracion_de_nacimiento_y_decl.03",
+              "orden": 3,
+              "nombre": "Cédulas y actas de nacimiento de los padres (o documento migratorio, si son extranjeros)",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "registro_civil_jce.revalidacion_de_declaracion_de_nacimiento_y_decl.04",
+              "orden": 4,
+              "nombre": "Testigos o pruebas supletorias del nacimiento",
+              "tipo": "documento",
+              "categoria": "pruebas",
+              "aporta": "cliente",
+              "obligatorio": false,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "registro_civil_jce.revalidacion_de_declaracion_de_nacimiento_y_decl.05",
+              "orden": 5,
+              "nombre": "Constancia de no registro del nacimiento",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "registro_civil_jce.revalidacion_de_declaracion_de_nacimiento_y_decl.06",
+              "orden": 6,
+              "nombre": "Acta de nacimiento resultante",
+              "tipo": "entregable",
+              "categoria": "certificaciones",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "registro_civil_jce.cedula_inhabilitada_o_cancelada",
+          "nombre": "Cédula inhabilitada o cancelada",
+          "materia": "registro_civil_jce",
+          "baseLegal": [
+            {
+              "texto": "Normativa de la JCE sobre inhabilitación y cancelación de cédulas",
+              "estado": "por_validar"
+            },
+            {
+              "texto": "Ley 4-23 Orgánica de los Actos del Estado Civil (promulgada el 18-ene-2023; deroga la Ley 659 de 1944)",
+              "estado": "verificada"
+            }
+          ],
+          "competencia": "Presidencia de la JCE (Magistrado Presidente); Att.: Comisión de Cancelados e Inhabilitados",
+          "etapas": [
+            "Verificar el estatus de la cédula",
+            "Reunir pruebas de identidad y nacionalidad",
+            "Instancia dirigida a la Presidencia de la JCE",
+            "Seguimiento ante la Comisión"
+          ],
+          "preguntas": [
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "registro_civil_jce.cedula_inhabilitada_o_cancelada.01",
+              "orden": 1,
+              "nombre": "Instancia motivada dirigida a la Presidencia de la JCE, con «Att.:» a la Comisión de Cancelados e Inhabilitados",
+              "tipo": "documento",
+              "categoria": "instancias",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "registro_civil_jce.cedula_inhabilitada_o_cancelada.02",
+              "orden": 2,
+              "nombre": "Copia de la cédula (si existe) o certificación de su estatus",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "registro_civil_jce.cedula_inhabilitada_o_cancelada.03",
+              "orden": 3,
+              "nombre": "Acta de nacimiento inextensa del solicitante",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "registro_civil_jce.cedula_inhabilitada_o_cancelada.04",
+              "orden": 4,
+              "nombre": "Documentos de los padres (cédulas, actas) que sustenten la nacionalidad",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "registro_civil_jce.cedula_inhabilitada_o_cancelada.05",
+              "orden": 5,
+              "nombre": "Decisión de la Comisión o resolución de la JCE",
+              "tipo": "entregable",
+              "categoria": "resoluciones",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "registro_civil_jce.reconocimientos_y_posesion_de_estado",
+          "nombre": "Reconocimientos y posesión de estado",
+          "materia": "registro_civil_jce",
+          "baseLegal": [
+            {
+              "texto": "Ley 4-23 Orgánica de los Actos del Estado Civil (promulgada el 18-ene-2023; deroga la Ley 659 de 1944)",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Ley 136-03, Código para el Sistema de Protección y los Derechos Fundamentales de Niños, Niñas y Adolescentes",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Artículos aplicables a la posesión de estado",
+              "estado": "por_validar"
+            }
+          ],
+          "competencia": "Oficialía del Estado Civil (reconocimiento administrativo) o tribunal competente (reconocimiento judicial)",
+          "etapas": [
+            "Definir la vía (administrativa o judicial)",
+            "Reunir pruebas",
+            "Trámite",
+            "Anotación en el acta de nacimiento"
+          ],
+          "preguntas": [
+            "hay_contraparte",
+            "hijos_menores"
+          ],
+          "requisitos": [
+            {
+              "id": "registro_civil_jce.reconocimientos_y_posesion_de_estado.01",
+              "orden": 1,
+              "nombre": "Acta de nacimiento inextensa de la persona a reconocer",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "registro_civil_jce.reconocimientos_y_posesion_de_estado.02",
+              "orden": 2,
+              "nombre": "Cédulas de quien reconoce y de la madre o el padre",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "registro_civil_jce.reconocimientos_y_posesion_de_estado.03",
+              "orden": 3,
+              "nombre": "Pruebas de posesión de estado (testimonios, fotografías, certificaciones escolares o médicas)",
+              "tipo": "documento",
+              "categoria": "pruebas",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "registro_civil_jce.reconocimientos_y_posesion_de_estado.04",
+              "orden": 4,
+              "nombre": "Acto de reconocimiento (notarial o ante la Oficialía)",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "registro_civil_jce.reconocimientos_y_posesion_de_estado.05",
+              "orden": 5,
+              "nombre": "Acta de nacimiento con la anotación de reconocimiento",
+              "tipo": "entregable",
+              "categoria": "certificaciones",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "numero": 4,
+      "area": "Derecho de familia",
+      "materia": "familia",
+      "servicios": [
+        {
+          "id": "familia.divorcio_por_mutuo_consentimiento",
+          "nombre": "Divorcio por mutuo consentimiento",
+          "materia": "familia",
+          "baseLegal": [
+            {
+              "texto": "Ley 1306-Bis de 1937 sobre Divorcio",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Art. 2, literal a): el mutuo consentimiento es causa de divorcio",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Art. 27 declarado no conforme con la Constitución por la sentencia TC/0226/21 (30-jul-2021): ya no rigen el mínimo de dos años de matrimonio, el tope de treinta años de vida común ni los límites de edad",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Art. 35 anulado por la sentencia TC/0070/15 (la mujer ya no debe esperar diez meses para casarse)",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Las convenciones de los cónyuges deben constar en acto auténtico; la sentencia es inapelable salvo falsificación de firmas o vicios graves (cap. IV)",
+              "estado": "verificada"
+            }
+          ],
+          "competencia": "Juzgado de Primera Instancia (Cámara Civil y Comercial) del domicilio de los cónyuges — confirmar sala",
+          "etapas": [
+            "Convenciones por acto auténtico (notario)",
+            "Solicitud y audiencia",
+            "Sentencia que admite el divorcio",
+            "Pronunciamiento ante el Oficial del Estado Civil (plazo de dos meses, art. 17)",
+            "Acta de divorcio"
+          ],
+          "preguntas": [
+            "hijos_menores",
+            "conyuge_en_exterior",
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "familia.divorcio_por_mutuo_consentimiento.01",
+              "orden": 1,
+              "nombre": "Cédulas o pasaportes de ambos cónyuges (copias legibles)",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_por_mutuo_consentimiento.02",
+              "orden": 2,
+              "nombre": "Acta de matrimonio inextensa, legalizada o con código de verificación",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_por_mutuo_consentimiento.03",
+              "orden": 3,
+              "nombre": "Actas de nacimiento inextensas de los hijos menores",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": "hijos_menores",
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_por_mutuo_consentimiento.04",
+              "orden": 4,
+              "nombre": "Convenciones y condiciones por acto auténtico: partición o renuncia de bienes de la comunidad, guarda y régimen de visitas, pensión alimentaria",
+              "tipo": "documento",
+              "categoria": "contratos",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_por_mutuo_consentimiento.05",
+              "orden": 5,
+              "nombre": "Domicilio de cada cónyuge durante el procedimiento",
+              "tipo": "dato",
+              "categoria": null,
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_por_mutuo_consentimiento.06",
+              "orden": 6,
+              "nombre": "Poder especial del cónyuge que reside en el exterior, legalizado o apostillado y traducido si procede",
+              "tipo": "documento",
+              "categoria": "poderes",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": "conyuge_en_exterior",
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_por_mutuo_consentimiento.07",
+              "orden": 7,
+              "nombre": "Instancia o solicitud de divorcio depositada",
+              "tipo": "documento",
+              "categoria": "instancias",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_por_mutuo_consentimiento.08",
+              "orden": 8,
+              "nombre": "Sentencia que admite el divorcio",
+              "tipo": "entregable",
+              "categoria": "sentencias",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_por_mutuo_consentimiento.09",
+              "orden": 9,
+              "nombre": "Pronunciamiento del divorcio ante el Oficial del Estado Civil dentro del plazo de dos meses",
+              "tipo": "accion",
+              "categoria": null,
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_por_mutuo_consentimiento.10",
+              "orden": 10,
+              "nombre": "Acta de divorcio inscrita",
+              "tipo": "entregable",
+              "categoria": "certificaciones",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "familia.divorcio_por_incompatibilidad_de_caracteres_caus",
+          "nombre": "Divorcio por incompatibilidad de caracteres (causa determinada)",
+          "materia": "familia",
+          "baseLegal": [
+            {
+              "texto": "Ley 1306-Bis de 1937 sobre Divorcio",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Art. 2, literal b): la incompatibilidad de caracteres, justificada por hechos cuya magnitud apreciarán los jueces (la lista de causas está en el art. 2, no en el art. 3)",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Competencia: tribunal de la residencia del demandado si es conocida en la República; si no, el de la residencia del demandante (Ley 1306-Bis)",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Plazos de notificación de testigos, apelación y pronunciamiento: confirmar contra el texto vigente antes de computarlos",
+              "estado": "por_validar"
+            }
+          ],
+          "competencia": "Cámara Civil y Comercial del Juzgado de Primera Instancia (domicilio del demandado, o del demandante si aquel no tiene residencia conocida en el país)",
+          "etapas": [
+            "Instancia o demanda",
+            "Emplazamiento por acto de alguacil",
+            "Audiencia y pruebas",
+            "Sentencia",
+            "Notificación y plazos de recurso",
+            "Pronunciamiento ante el Oficial del Estado Civil",
+            "Acta de divorcio"
+          ],
+          "preguntas": [
+            "hijos_menores",
+            "hay_contraparte",
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "familia.divorcio_por_incompatibilidad_de_caracteres_caus.01",
+              "orden": 1,
+              "nombre": "Acta de matrimonio inextensa",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_por_incompatibilidad_de_caracteres_caus.02",
+              "orden": 2,
+              "nombre": "Actas de nacimiento inextensas de los hijos menores",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": "hijos_menores",
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_por_incompatibilidad_de_caracteres_caus.03",
+              "orden": 3,
+              "nombre": "Domicilio o residencia conocida del cónyuge demandado (define el tribunal competente)",
+              "tipo": "dato",
+              "categoria": null,
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_por_incompatibilidad_de_caracteres_caus.04",
+              "orden": 4,
+              "nombre": "Instancia o demanda en divorcio",
+              "tipo": "documento",
+              "categoria": "instancias",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_por_incompatibilidad_de_caracteres_caus.05",
+              "orden": 5,
+              "nombre": "Pruebas de los hechos que sustentan la incompatibilidad (testigos, documentos, actos notariales)",
+              "tipo": "documento",
+              "categoria": "pruebas",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_por_incompatibilidad_de_caracteres_caus.06",
+              "orden": 6,
+              "nombre": "Lista de testigos notificada con la anticipación que exige la ley",
+              "tipo": "accion",
+              "categoria": null,
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_por_incompatibilidad_de_caracteres_caus.07",
+              "orden": 7,
+              "nombre": "Medidas provisionales sobre guarda, visitas y pensión (si hay hijos menores)",
+              "tipo": "documento",
+              "categoria": "instancias",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": "hijos_menores",
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_por_incompatibilidad_de_caracteres_caus.08",
+              "orden": 8,
+              "nombre": "Acto de alguacil de emplazamiento al cónyuge demandado",
+              "tipo": "documento",
+              "categoria": "actos_alguacil",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_por_incompatibilidad_de_caracteres_caus.09",
+              "orden": 9,
+              "nombre": "Sentencia de divorcio y notificación a las partes",
+              "tipo": "entregable",
+              "categoria": "sentencias",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_por_incompatibilidad_de_caracteres_caus.10",
+              "orden": 10,
+              "nombre": "Pronunciamiento ante el Oficial del Estado Civil",
+              "tipo": "accion",
+              "categoria": null,
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_por_incompatibilidad_de_caracteres_caus.11",
+              "orden": 11,
+              "nombre": "Acta de divorcio inscrita",
+              "tipo": "entregable",
+              "categoria": "certificaciones",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "familia.divorcio_al_vapor_extranjeros_y_dominicanos_no_r",
+          "nombre": "Divorcio «al vapor» (extranjeros y dominicanos no residentes)",
+          "materia": "familia",
+          "baseLegal": [
+            {
+              "texto": "Ley 142 del 18 de mayo de 1971 (procedimiento especial de divorcio por mutuo consentimiento para extranjeros y dominicanos no residentes)",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Condiciones indicadas por las fuentes: los cónyuges residen en el exterior, eligen libremente la competencia de un tribunal dominicano y al menos uno comparece a la audiencia; el otro puede estar representado por apoderado especial",
+              "estado": "verificada"
+            }
+          ],
+          "competencia": "Cámara Civil y Comercial del Juzgado de Primera Instancia",
+          "etapas": [
+            "Reunir documentos apostillados y traducidos",
+            "Poder especial del cónyuge que no comparece",
+            "Audiencia (comparece al menos un cónyuge)",
+            "Sentencia",
+            "Pronunciamiento ante el Oficial del Estado Civil y acta de divorcio"
+          ],
+          "preguntas": [
+            "hijos_menores",
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "familia.divorcio_al_vapor_extranjeros_y_dominicanos_no_r.01",
+              "orden": 1,
+              "nombre": "Pasaportes o documentos de identidad de ambos cónyuges",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_al_vapor_extranjeros_y_dominicanos_no_r.02",
+              "orden": 2,
+              "nombre": "Acta de matrimonio apostillada o legalizada y traducida por intérprete judicial dominicano si está en otro idioma",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_al_vapor_extranjeros_y_dominicanos_no_r.03",
+              "orden": 3,
+              "nombre": "Actas de nacimiento de los hijos, apostilladas o legalizadas y traducidas",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": "hijos_menores",
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_al_vapor_extranjeros_y_dominicanos_no_r.04",
+              "orden": 4,
+              "nombre": "Acuerdo de los cónyuges sobre guarda, pensión alimentaria y bienes",
+              "tipo": "documento",
+              "categoria": "contratos",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_al_vapor_extranjeros_y_dominicanos_no_r.05",
+              "orden": 5,
+              "nombre": "Poder especial del cónyuge que no comparece, legalizado o apostillado y traducido si procede",
+              "tipo": "documento",
+              "categoria": "poderes",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_al_vapor_extranjeros_y_dominicanos_no_r.06",
+              "orden": 6,
+              "nombre": "Instancia que somete el caso a la competencia del tribunal dominicano",
+              "tipo": "documento",
+              "categoria": "instancias",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_al_vapor_extranjeros_y_dominicanos_no_r.07",
+              "orden": 7,
+              "nombre": "Comparecencia a la audiencia de al menos uno de los cónyuges, con su documento de identidad",
+              "tipo": "accion",
+              "categoria": null,
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_al_vapor_extranjeros_y_dominicanos_no_r.08",
+              "orden": 8,
+              "nombre": "Sentencia de divorcio",
+              "tipo": "entregable",
+              "categoria": "sentencias",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.divorcio_al_vapor_extranjeros_y_dominicanos_no_r.09",
+              "orden": 9,
+              "nombre": "Pronunciamiento ante el Oficial del Estado Civil y acta de divorcio",
+              "tipo": "entregable",
+              "categoria": "certificaciones",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "familia.guarda_custodia_regimen_de_visitas_y_pension_ali",
+          "nombre": "Guarda, custodia, régimen de visitas y pensión alimentaria",
+          "materia": "familia",
+          "baseLegal": [
+            {
+              "texto": "Ley 136-03, Código para el Sistema de Protección y los Derechos Fundamentales de Niños, Niñas y Adolescentes (interés superior del niño)",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Sala o tribunal competente y reglas de cuantificación de la pensión",
+              "estado": "por_validar"
+            }
+          ],
+          "competencia": "Tribunal de Niños, Niñas y Adolescentes del domicilio del menor — confirmar sala",
+          "etapas": [
+            "Intento de acuerdo",
+            "Instancia o demanda",
+            "Emplazamiento por acto de alguacil",
+            "Audiencia",
+            "Sentencia y ejecución"
+          ],
+          "preguntas": [
+            "hay_contraparte",
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "familia.guarda_custodia_regimen_de_visitas_y_pension_ali.01",
+              "orden": 1,
+              "nombre": "Acta de nacimiento inextensa de cada menor",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.guarda_custodia_regimen_de_visitas_y_pension_ali.02",
+              "orden": 2,
+              "nombre": "Cédulas de ambos padres",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.guarda_custodia_regimen_de_visitas_y_pension_ali.03",
+              "orden": 3,
+              "nombre": "Pruebas de ingresos del obligado a la pensión",
+              "tipo": "documento",
+              "categoria": "pruebas",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "familia.guarda_custodia_regimen_de_visitas_y_pension_ali.04",
+              "orden": 4,
+              "nombre": "Pruebas de los gastos del menor (escolares, salud, alimentación)",
+              "tipo": "documento",
+              "categoria": "pruebas",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "familia.guarda_custodia_regimen_de_visitas_y_pension_ali.05",
+              "orden": 5,
+              "nombre": "Pruebas de la guarda de hecho y de la convivencia",
+              "tipo": "documento",
+              "categoria": "pruebas",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "familia.guarda_custodia_regimen_de_visitas_y_pension_ali.06",
+              "orden": 6,
+              "nombre": "Acuerdo previo entre los padres por acto auténtico (si existe)",
+              "tipo": "documento",
+              "categoria": "contratos",
+              "aporta": "firma",
+              "obligatorio": false,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.guarda_custodia_regimen_de_visitas_y_pension_ali.07",
+              "orden": 7,
+              "nombre": "Instancia o demanda",
+              "tipo": "documento",
+              "categoria": "instancias",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.guarda_custodia_regimen_de_visitas_y_pension_ali.08",
+              "orden": 8,
+              "nombre": "Acto de alguacil de emplazamiento o citación",
+              "tipo": "documento",
+              "categoria": "actos_alguacil",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.guarda_custodia_regimen_de_visitas_y_pension_ali.09",
+              "orden": 9,
+              "nombre": "Sentencia",
+              "tipo": "entregable",
+              "categoria": "sentencias",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "familia.reconocimiento_de_paternidad_o_maternidad",
+          "nombre": "Reconocimiento de paternidad o maternidad",
+          "materia": "familia",
+          "baseLegal": [
+            {
+              "texto": "Ley 136-03 (filiación y reconocimiento de niños, niñas y adolescentes)",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Ley 4-23 Orgánica de los Actos del Estado Civil",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Artículos específicos y vía (administrativa o judicial)",
+              "estado": "por_validar"
+            }
+          ],
+          "competencia": "Oficialía del Estado Civil (vía administrativa) o tribunal competente (vía judicial)",
+          "etapas": [
+            "Definir la vía",
+            "Reunir pruebas",
+            "Trámite",
+            "Anotación en el acta de nacimiento"
+          ],
+          "preguntas": [
+            "hay_contraparte",
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "familia.reconocimiento_de_paternidad_o_maternidad.01",
+              "orden": 1,
+              "nombre": "Acta de nacimiento inextensa de la persona a reconocer",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.reconocimiento_de_paternidad_o_maternidad.02",
+              "orden": 2,
+              "nombre": "Cédulas de quien reconoce y de la madre o el padre",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.reconocimiento_de_paternidad_o_maternidad.03",
+              "orden": 3,
+              "nombre": "Prueba de ADN (si hay controversia)",
+              "tipo": "documento",
+              "categoria": "pruebas",
+              "aporta": "cliente",
+              "obligatorio": false,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "familia.reconocimiento_de_paternidad_o_maternidad.04",
+              "orden": 4,
+              "nombre": "Certificado de nacido vivo o constancias médicas del nacimiento",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": false,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "familia.reconocimiento_de_paternidad_o_maternidad.05",
+              "orden": 5,
+              "nombre": "Instancia o demanda (vía judicial)",
+              "tipo": "documento",
+              "categoria": "instancias",
+              "aporta": "firma",
+              "obligatorio": false,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.reconocimiento_de_paternidad_o_maternidad.06",
+              "orden": 6,
+              "nombre": "Acta de nacimiento con la anotación de reconocimiento",
+              "tipo": "entregable",
+              "categoria": "certificaciones",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "familia.nulidad_de_reconocimiento_y_negacion_de_filiacio",
+          "nombre": "Nulidad de reconocimiento y negación de filiación",
+          "materia": "familia",
+          "baseLegal": [
+            {
+              "texto": "Ley 136-03",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Ley 4-23 Orgánica de los Actos del Estado Civil",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Código Civil dominicano",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Artículos específicos, plazos y legitimación activa",
+              "estado": "por_validar"
+            }
+          ],
+          "competencia": "Cámara Civil y Comercial o tribunal de familia/NNA competente — confirmar",
+          "etapas": [
+            "Análisis de legitimación y plazos",
+            "Pruebas (incluida prueba científica)",
+            "Demanda y emplazamiento",
+            "Sentencia",
+            "Anotación en el acta de nacimiento"
+          ],
+          "preguntas": [
+            "hay_contraparte",
+            "hijos_menores",
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "familia.nulidad_de_reconocimiento_y_negacion_de_filiacio.01",
+              "orden": 1,
+              "nombre": "Acta de nacimiento inextensa que contiene el reconocimiento o la filiación impugnada",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.nulidad_de_reconocimiento_y_negacion_de_filiacio.02",
+              "orden": 2,
+              "nombre": "Actas de nacimiento y cédulas de las partes involucradas",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.nulidad_de_reconocimiento_y_negacion_de_filiacio.03",
+              "orden": 3,
+              "nombre": "Prueba de ADN o experticia científica",
+              "tipo": "documento",
+              "categoria": "pruebas",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "familia.nulidad_de_reconocimiento_y_negacion_de_filiacio.04",
+              "orden": 4,
+              "nombre": "Pruebas documentales y testimoniales de los hechos",
+              "tipo": "documento",
+              "categoria": "pruebas",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "familia.nulidad_de_reconocimiento_y_negacion_de_filiacio.05",
+              "orden": 5,
+              "nombre": "Demanda",
+              "tipo": "documento",
+              "categoria": "instancias",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.nulidad_de_reconocimiento_y_negacion_de_filiacio.06",
+              "orden": 6,
+              "nombre": "Acto de alguacil de emplazamiento",
+              "tipo": "documento",
+              "categoria": "actos_alguacil",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "familia.nulidad_de_reconocimiento_y_negacion_de_filiacio.07",
+              "orden": 7,
+              "nombre": "Sentencia y anotación marginal en el acta de nacimiento",
+              "tipo": "entregable",
+              "categoria": "sentencias",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "numero": 5,
+      "area": "Migración",
+      "materia": "migratorio",
+      "servicios": [
+        {
+          "id": "migratorio.residencia_temporal",
+          "nombre": "Residencia temporal",
+          "materia": "migratorio",
+          "baseLegal": [
+            {
+              "texto": "Ley General de Migración núm. 285-04 (15-ago-2004)",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Reglamento de aplicación, Decreto 631-11",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Las listas, montos y vigencias que exige la DGM cambian: confirmar contra la lista vigente de la Dirección General de Migración antes de depositar",
+              "estado": "por_validar"
+            }
+          ],
+          "competencia": "Dirección General de Migración (DGM), Dirección de Extranjería",
+          "etapas": [
+            "Visa de residencia (si aplica)",
+            "Examen médico autorizado por la DGM",
+            "Depósito del expediente",
+            "Carné de residencia"
+          ],
+          "preguntas": [
+            "cliente_extranjero",
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "migratorio.residencia_temporal.01",
+              "orden": 1,
+              "nombre": "Pasaporte vigente (la DGM exige vigencia mínima; confirmar los meses actuales)",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "migratorio.residencia_temporal.02",
+              "orden": 2,
+              "nombre": "Acta de nacimiento inextensa, legalizada o apostillada y traducida por intérprete judicial dominicano si no está en español",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "migratorio.residencia_temporal.03",
+              "orden": 3,
+              "nombre": "Certificado de no antecedentes penales del país de origen o de residencia en los últimos cinco años, apostillado",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "migratorio.residencia_temporal.04",
+              "orden": 4,
+              "nombre": "Examen médico autorizado por la DGM",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "migratorio.residencia_temporal.05",
+              "orden": 5,
+              "nombre": "Visa de residencia, cuando aplique al caso",
+              "tipo": "documento",
+              "categoria": "otros",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": "cliente_extranjero",
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "migratorio.residencia_temporal.06",
+              "orden": 6,
+              "nombre": "Certificación bancaria de solvencia económica (monto mínimo según la DGM)",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "migratorio.residencia_temporal.07",
+              "orden": 7,
+              "nombre": "Acta de matrimonio apostillada, si el solicitante o un dependiente lo es por cónyuge",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": false,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "migratorio.residencia_temporal.08",
+              "orden": 8,
+              "nombre": "Carné de residencia temporal",
+              "tipo": "entregable",
+              "categoria": "resoluciones",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "migratorio.residencia_permanente",
+          "nombre": "Residencia permanente",
+          "materia": "migratorio",
+          "baseLegal": [
+            {
+              "texto": "Ley General de Migración núm. 285-04 (15-ago-2004)",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Reglamento de aplicación, Decreto 631-11",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Las listas, montos y vigencias que exige la DGM cambian: confirmar contra la lista vigente de la Dirección General de Migración antes de depositar",
+              "estado": "por_validar"
+            }
+          ],
+          "competencia": "Dirección General de Migración (DGM)",
+          "etapas": [
+            "Verificar el tiempo de residencia temporal exigido",
+            "Depósito",
+            "Carné de residencia permanente"
+          ],
+          "preguntas": [
+            "cliente_extranjero",
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "migratorio.residencia_permanente.01",
+              "orden": 1,
+              "nombre": "Pasaporte vigente",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "migratorio.residencia_permanente.02",
+              "orden": 2,
+              "nombre": "Carné de residencia temporal vigente (original)",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "migratorio.residencia_permanente.03",
+              "orden": 3,
+              "nombre": "Certificado de no antecedentes penales emitido por la Procuraduría General de la República",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "migratorio.residencia_permanente.04",
+              "orden": 4,
+              "nombre": "Constancia del cumplimiento del tiempo de residencia temporal y renovaciones",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "migratorio.residencia_permanente.05",
+              "orden": 5,
+              "nombre": "Carné de residencia permanente",
+              "tipo": "entregable",
+              "categoria": "resoluciones",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "migratorio.permiso_de_trabajo_y_visas",
+          "nombre": "Permiso de trabajo y visas",
+          "materia": "migratorio",
+          "baseLegal": [
+            {
+              "texto": "Ley General de Migración núm. 285-04 (15-ago-2004)",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Reglamento de aplicación, Decreto 631-11",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Las listas, montos y vigencias que exige la DGM cambian: confirmar contra la lista vigente de la Dirección General de Migración antes de depositar",
+              "estado": "por_validar"
+            }
+          ],
+          "competencia": "Dirección General de Migración (DGM) y Ministerio de Trabajo, según el caso",
+          "etapas": [
+            "Definir el tipo de visa o permiso",
+            "Documentos del solicitante y del empleador",
+            "Depósito y seguimiento"
+          ],
+          "preguntas": [
+            "cliente_extranjero",
+            "persona_juridica",
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "migratorio.permiso_de_trabajo_y_visas.01",
+              "orden": 1,
+              "nombre": "Pasaporte vigente",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "migratorio.permiso_de_trabajo_y_visas.02",
+              "orden": 2,
+              "nombre": "Certificado de no antecedentes penales apostillado",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "migratorio.permiso_de_trabajo_y_visas.03",
+              "orden": 3,
+              "nombre": "Examen médico aprobado por la DGM",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "migratorio.permiso_de_trabajo_y_visas.04",
+              "orden": 4,
+              "nombre": "Documentos del empleador (Registro Mercantil, RNC, carta de solicitud)",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": "persona_juridica",
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "migratorio.permiso_de_trabajo_y_visas.05",
+              "orden": 5,
+              "nombre": "Visa de trabajo temporal, cuando aplique",
+              "tipo": "documento",
+              "categoria": "otros",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "migratorio.permiso_de_trabajo_y_visas.06",
+              "orden": 6,
+              "nombre": "Permiso o visa emitido",
+              "tipo": "entregable",
+              "categoria": "resoluciones",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "migratorio.preparacion_de_documentos_de_soporte_para_visas",
+          "nombre": "Preparación de documentos de soporte para visas",
+          "materia": "migratorio",
+          "baseLegal": [
+            {
+              "texto": "Requisitos del consulado o la autoridad migratoria de destino",
+              "estado": "por_validar"
+            }
+          ],
+          "competencia": "Consulado o autoridad migratoria del país de destino",
+          "etapas": [
+            "Identificar la visa y la lista oficial de requisitos",
+            "Reunir y legalizar los documentos",
+            "Traducciones certificadas si aplica"
+          ],
+          "preguntas": [
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "migratorio.preparacion_de_documentos_de_soporte_para_visas.01",
+              "orden": 1,
+              "nombre": "Lista oficial de requisitos del consulado para la visa solicitada",
+              "tipo": "documento",
+              "categoria": "formularios",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "migratorio.preparacion_de_documentos_de_soporte_para_visas.02",
+              "orden": 2,
+              "nombre": "Documentos de soporte (actas, certificaciones, cartas, estados bancarios) según esa lista",
+              "tipo": "documento",
+              "categoria": "otros",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "migratorio.preparacion_de_documentos_de_soporte_para_visas.03",
+              "orden": 3,
+              "nombre": "Traducciones certificadas por intérprete judicial, si aplica",
+              "tipo": "documento",
+              "categoria": "otros",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": "documentos_del_exterior",
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "migratorio.preparacion_de_documentos_de_soporte_para_visas.04",
+              "orden": 4,
+              "nombre": "Legalización o apostilla de los documentos, si aplica",
+              "tipo": "documento",
+              "categoria": "otros",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": "documentos_del_exterior",
+              "validar": true,
+              "nota": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "numero": 6,
+      "area": "Trámites administrativos y fiscales",
+      "materia": "administrativo",
+      "servicios": [
+        {
+          "id": "administrativo.registro_y_modificacion_de_datos_en_el_rnc_dgii",
+          "nombre": "Registro y modificación de datos en el RNC (DGII)",
+          "materia": "administrativo",
+          "baseLegal": [
+            {
+              "texto": "Ley 11-92, Código Tributario",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Guías de la DGII para registro y modificación del RNC",
+              "estado": "verificada"
+            }
+          ],
+          "competencia": "Dirección General de Impuestos Internos (DGII)",
+          "etapas": [
+            "Reunir documentos de constitución",
+            "Solicitud en la Oficina Virtual o en una administración local",
+            "Constancia de RNC"
+          ],
+          "preguntas": [
+            "persona_juridica"
+          ],
+          "requisitos": [
+            {
+              "id": "administrativo.registro_y_modificacion_de_datos_en_el_rnc_dgii.01",
+              "orden": 1,
+              "nombre": "Copia del certificado de Registro Mercantil (personas jurídicas)",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": "persona_juridica",
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "administrativo.registro_y_modificacion_de_datos_en_el_rnc_dgii.02",
+              "orden": 2,
+              "nombre": "Copia del certificado de nombre comercial emitido por ONAPI (si lo tiene)",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": false,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "administrativo.registro_y_modificacion_de_datos_en_el_rnc_dgii.03",
+              "orden": 3,
+              "nombre": "Cédula o documento de identidad del representante o titular",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "administrativo.registro_y_modificacion_de_datos_en_el_rnc_dgii.04",
+              "orden": 4,
+              "nombre": "Formulario de solicitud de la DGII",
+              "tipo": "documento",
+              "categoria": "formularios",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "administrativo.registro_y_modificacion_de_datos_en_el_rnc_dgii.05",
+              "orden": 5,
+              "nombre": "Constancia o certificado de RNC",
+              "tipo": "entregable",
+              "categoria": "certificaciones",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "administrativo.certificaciones_y_gestiones_ante_la_dgii_y_otras",
+          "nombre": "Certificaciones y gestiones ante la DGII y otras instituciones del Estado",
+          "materia": "administrativo",
+          "baseLegal": [
+            {
+              "texto": "Procedimiento propio de cada institución",
+              "estado": "por_validar"
+            }
+          ],
+          "competencia": "DGII u otra institución del Estado, según el trámite",
+          "etapas": [
+            "Identificar el trámite y los requisitos de la institución",
+            "Depósito",
+            "Seguimiento y retiro"
+          ],
+          "preguntas": [
+            "persona_juridica",
+            "actua_por_poder"
+          ],
+          "requisitos": [
+            {
+              "id": "administrativo.certificaciones_y_gestiones_ante_la_dgii_y_otras.01",
+              "orden": 1,
+              "nombre": "Documento de identidad o RNC del solicitante",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "administrativo.certificaciones_y_gestiones_ante_la_dgii_y_otras.02",
+              "orden": 2,
+              "nombre": "Poder o autorización para gestionar en nombre del contribuyente",
+              "tipo": "documento",
+              "categoria": "poderes",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": "actua_por_poder",
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "administrativo.certificaciones_y_gestiones_ante_la_dgii_y_otras.03",
+              "orden": 3,
+              "nombre": "Solicitud o formulario de la institución",
+              "tipo": "documento",
+              "categoria": "formularios",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "administrativo.certificaciones_y_gestiones_ante_la_dgii_y_otras.04",
+              "orden": 4,
+              "nombre": "Certificación o documento emitido",
+              "tipo": "entregable",
+              "categoria": "certificaciones",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "numero": 7,
+      "area": "Documentos legales",
+      "materia": "notarial",
+      "servicios": [
+        {
+          "id": "notarial.poder_especial",
+          "nombre": "Poder especial",
+          "materia": "notarial",
+          "baseLegal": [
+            {
+              "texto": "Ley 140-15 del Notariado",
+              "estado": "verificada"
+            }
+          ],
+          "competencia": "Notario público (legalización de firmas); apostilla o legalización si se usa en el exterior",
+          "etapas": [
+            "Redacción",
+            "Firma ante notario",
+            "Legalización o apostilla si procede"
+          ],
+          "preguntas": [
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "notarial.poder_especial.01",
+              "orden": 1,
+              "nombre": "Cédulas o pasaportes del otorgante y del apoderado",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "notarial.poder_especial.02",
+              "orden": 2,
+              "nombre": "Alcance y facultades del poder (datos del trámite)",
+              "tipo": "dato",
+              "categoria": null,
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "notarial.poder_especial.03",
+              "orden": 3,
+              "nombre": "Poder firmado y legalizado por notario",
+              "tipo": "entregable",
+              "categoria": "poderes",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "notarial.poder_especial.04",
+              "orden": 4,
+              "nombre": "Apostilla o legalización, si el poder se usará en otro país",
+              "tipo": "documento",
+              "categoria": "poderes",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": "documentos_del_exterior",
+              "validar": true,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "notarial.contratos_redaccion_y_revision",
+          "nombre": "Contratos (redacción y revisión)",
+          "materia": "notarial",
+          "baseLegal": [
+            {
+              "texto": "Ley 140-15 del Notariado",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Código Civil dominicano (régimen general de los contratos)",
+              "estado": "verificada"
+            }
+          ],
+          "competencia": "Notario público si se requiere acto auténtico o legalización de firmas",
+          "etapas": [
+            "Levantamiento de condiciones",
+            "Redacción o revisión",
+            "Firma y legalización"
+          ],
+          "preguntas": [
+            "persona_juridica",
+            "actua_por_poder"
+          ],
+          "requisitos": [
+            {
+              "id": "notarial.contratos_redaccion_y_revision.01",
+              "orden": 1,
+              "nombre": "Datos completos de las partes y del objeto del contrato",
+              "tipo": "dato",
+              "categoria": null,
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "notarial.contratos_redaccion_y_revision.02",
+              "orden": 2,
+              "nombre": "Cédulas o RNC de las partes; si es sociedad, Registro Mercantil y acta que autoriza",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "notarial.contratos_redaccion_y_revision.03",
+              "orden": 3,
+              "nombre": "Borrador del contrato revisado y aprobado por el cliente",
+              "tipo": "documento",
+              "categoria": "contratos",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "notarial.contratos_redaccion_y_revision.04",
+              "orden": 4,
+              "nombre": "Contrato firmado y legalizado",
+              "tipo": "entregable",
+              "categoria": "contratos",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "notarial.actos_y_declaraciones_juradas",
+          "nombre": "Actos y declaraciones juradas",
+          "materia": "notarial",
+          "baseLegal": [
+            {
+              "texto": "Ley 140-15 del Notariado",
+              "estado": "verificada"
+            }
+          ],
+          "competencia": "Notario público",
+          "etapas": [
+            "Redacción",
+            "Firma ante notario",
+            "Legalización"
+          ],
+          "preguntas": [
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "notarial.actos_y_declaraciones_juradas.01",
+              "orden": 1,
+              "nombre": "Cédula o pasaporte del declarante",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "notarial.actos_y_declaraciones_juradas.02",
+              "orden": 2,
+              "nombre": "Hechos o declaraciones que se harán constar",
+              "tipo": "dato",
+              "categoria": null,
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "notarial.actos_y_declaraciones_juradas.03",
+              "orden": 3,
+              "nombre": "Documentos de soporte de lo declarado",
+              "tipo": "documento",
+              "categoria": "pruebas",
+              "aporta": "cliente",
+              "obligatorio": false,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "notarial.actos_y_declaraciones_juradas.04",
+              "orden": 4,
+              "nombre": "Acto o declaración jurada firmada y legalizada",
+              "tipo": "entregable",
+              "categoria": "otros",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "notarial.traduccion_de_documentos",
+          "nombre": "Traducción de documentos",
+          "materia": "notarial",
+          "baseLegal": [
+            {
+              "texto": "Traducción por intérprete judicial dominicano (exigida por la DGM y otras autoridades para documentos en otro idioma)",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Reglas de legalización y apostilla de cada institución destino",
+              "estado": "por_validar"
+            }
+          ],
+          "competencia": "Intérprete judicial; Ministerio de Relaciones Exteriores para apostilla o legalización",
+          "etapas": [
+            "Recibir el documento original",
+            "Traducción certificada",
+            "Legalización si procede"
+          ],
+          "preguntas": [
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "notarial.traduccion_de_documentos.01",
+              "orden": 1,
+              "nombre": "Documento original o copia certificada a traducir",
+              "tipo": "documento",
+              "categoria": "otros",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "notarial.traduccion_de_documentos.02",
+              "orden": 2,
+              "nombre": "Idioma de origen y destino, y para qué institución se usará",
+              "tipo": "dato",
+              "categoria": null,
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "notarial.traduccion_de_documentos.03",
+              "orden": 3,
+              "nombre": "Traducción certificada por intérprete judicial",
+              "tipo": "entregable",
+              "categoria": "otros",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "notarial.traduccion_de_documentos.04",
+              "orden": 4,
+              "nombre": "Legalización o apostilla, si la institución destino la exige",
+              "tipo": "documento",
+              "categoria": "otros",
+              "aporta": "cliente",
+              "obligatorio": false,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "numero": 8,
+      "area": "Litigio civil",
+      "materia": "civil",
+      "servicios": [
+        {
+          "id": "civil.litigio_civil_general_camara_civil_y_comercial",
+          "nombre": "Litigio civil general (Cámara Civil y Comercial)",
+          "materia": "civil",
+          "baseLegal": [
+            {
+              "texto": "Código de Procedimiento Civil y Código Civil dominicanos",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Plazos y formalidades de cada tipo de demanda",
+              "estado": "por_validar"
+            }
+          ],
+          "competencia": "Cámara Civil y Comercial del Juzgado de Primera Instancia u otro tribunal competente",
+          "etapas": [
+            "Análisis del caso y de las pruebas",
+            "Intimación o puesta en mora si procede",
+            "Demanda y emplazamiento por acto de alguacil",
+            "Audiencias",
+            "Sentencia y ejecución"
+          ],
+          "preguntas": [
+            "hay_contraparte",
+            "persona_juridica"
+          ],
+          "requisitos": [
+            {
+              "id": "civil.litigio_civil_general_camara_civil_y_comercial.01",
+              "orden": 1,
+              "nombre": "Pruebas documentales (contratos, facturas, correspondencia, estados de cuenta)",
+              "tipo": "documento",
+              "categoria": "pruebas",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "civil.litigio_civil_general_camara_civil_y_comercial.02",
+              "orden": 2,
+              "nombre": "Datos completos de la contraparte (identidad, domicilio, RNC si es empresa)",
+              "tipo": "dato",
+              "categoria": null,
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": "hay_contraparte",
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "civil.litigio_civil_general_camara_civil_y_comercial.03",
+              "orden": 3,
+              "nombre": "Demanda o instancia",
+              "tipo": "documento",
+              "categoria": "instancias",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "civil.litigio_civil_general_camara_civil_y_comercial.04",
+              "orden": 4,
+              "nombre": "Acto de alguacil de emplazamiento",
+              "tipo": "documento",
+              "categoria": "actos_alguacil",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "civil.litigio_civil_general_camara_civil_y_comercial.05",
+              "orden": 5,
+              "nombre": "Lista de testigos (si aplica)",
+              "tipo": "documento",
+              "categoria": "pruebas",
+              "aporta": "cliente",
+              "obligatorio": false,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "civil.litigio_civil_general_camara_civil_y_comercial.06",
+              "orden": 6,
+              "nombre": "Sentencia",
+              "tipo": "entregable",
+              "categoria": "sentencias",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "civil.demanda_en_cobro_de_pesos",
+          "nombre": "Demanda en cobro de pesos",
+          "materia": "civil",
+          "baseLegal": [
+            {
+              "texto": "Código Civil y Código de Procedimiento Civil dominicanos",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Requisitos de la intimación y del embargo conservatorio, si se solicita",
+              "estado": "por_validar"
+            }
+          ],
+          "competencia": "Juzgado de Paz o Cámara Civil y Comercial según la cuantía — confirmar",
+          "etapas": [
+            "Reunir prueba de la deuda",
+            "Acto de intimación o puesta en mora",
+            "Demanda y emplazamiento",
+            "Sentencia y ejecución"
+          ],
+          "preguntas": [
+            "hay_contraparte",
+            "persona_juridica"
+          ],
+          "requisitos": [
+            {
+              "id": "civil.demanda_en_cobro_de_pesos.01",
+              "orden": 1,
+              "nombre": "Prueba de la deuda (pagaré, contrato, factura, estado de cuenta, cheques devueltos)",
+              "tipo": "documento",
+              "categoria": "pruebas",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "civil.demanda_en_cobro_de_pesos.02",
+              "orden": 2,
+              "nombre": "Acto de intimación o puesta en mora al deudor",
+              "tipo": "documento",
+              "categoria": "actos_alguacil",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "civil.demanda_en_cobro_de_pesos.03",
+              "orden": 3,
+              "nombre": "Cédula o RNC y domicilio del deudor",
+              "tipo": "dato",
+              "categoria": null,
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "civil.demanda_en_cobro_de_pesos.04",
+              "orden": 4,
+              "nombre": "Certificación de Registro Mercantil del deudor (si es empresa)",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": "persona_juridica",
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "civil.demanda_en_cobro_de_pesos.05",
+              "orden": 5,
+              "nombre": "Demanda",
+              "tipo": "documento",
+              "categoria": "instancias",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "civil.demanda_en_cobro_de_pesos.06",
+              "orden": 6,
+              "nombre": "Acto de alguacil de emplazamiento",
+              "tipo": "documento",
+              "categoria": "actos_alguacil",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "civil.demanda_en_cobro_de_pesos.07",
+              "orden": 7,
+              "nombre": "Sentencia",
+              "tipo": "entregable",
+              "categoria": "sentencias",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        },
+        {
+          "id": "civil.determinacion_de_herederos_ante_tribunal_civil",
+          "nombre": "Determinación de herederos ante tribunal civil",
+          "materia": "civil",
+          "baseLegal": [
+            {
+              "texto": "Código Civil dominicano (sucesiones)",
+              "estado": "verificada"
+            },
+            {
+              "texto": "Procedimiento y tribunal competente para bienes no registrados",
+              "estado": "por_validar"
+            }
+          ],
+          "competencia": "Cámara Civil y Comercial del Juzgado de Primera Instancia — confirmar",
+          "etapas": [
+            "Reunir actas y acto de notoriedad",
+            "Instancia o demanda",
+            "Decisión que determina los herederos"
+          ],
+          "preguntas": [
+            "hay_contraparte",
+            "documentos_del_exterior"
+          ],
+          "requisitos": [
+            {
+              "id": "civil.determinacion_de_herederos_ante_tribunal_civil.01",
+              "orden": 1,
+              "nombre": "Copia certificada del acta de defunción del causante",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "civil.determinacion_de_herederos_ante_tribunal_civil.02",
+              "orden": 2,
+              "nombre": "Actas de nacimiento (y de matrimonio, si aplica) de los herederos",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "civil.determinacion_de_herederos_ante_tribunal_civil.03",
+              "orden": 3,
+              "nombre": "Acto de notoriedad",
+              "tipo": "documento",
+              "categoria": "certificaciones",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": true,
+              "nota": null
+            },
+            {
+              "id": "civil.determinacion_de_herederos_ante_tribunal_civil.04",
+              "orden": 4,
+              "nombre": "Cédulas de los herederos",
+              "tipo": "documento",
+              "categoria": "identificacion",
+              "aporta": "cliente",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "civil.determinacion_de_herederos_ante_tribunal_civil.05",
+              "orden": 5,
+              "nombre": "Instancia o demanda",
+              "tipo": "documento",
+              "categoria": "instancias",
+              "aporta": "firma",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            },
+            {
+              "id": "civil.determinacion_de_herederos_ante_tribunal_civil.06",
+              "orden": 6,
+              "nombre": "Decisión que determina los herederos",
+              "tipo": "entregable",
+              "categoria": "sentencias",
+              "aporta": "tercero",
+              "obligatorio": true,
+              "condicion": null,
+              "validar": false,
+              "nota": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

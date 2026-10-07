@@ -57,6 +57,28 @@ export class ExpedienteRequisito {
   @Column('text', { nullable: true })
   observaciones?: string;
 
+  /** materia | general | servicio | manual */
+  @Column({ default: 'materia' })
+  origen: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  plantillaCodigo?: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  tipo?: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  categoriaDocumento?: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  aporta?: string | null;
+
+  @Column({ default: false })
+  validar: boolean;
+
+  @Column('text', { nullable: true })
+  motivoNoAplica?: string | null;
+
   @CreateDateColumn()
   creadoEn: Date;
 }
