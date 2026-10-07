@@ -54,6 +54,36 @@ export class ExpedienteRequisitosService {
   }
 
   /**
+   * Garantiza que un expediente SIN servicio del catálogo tenga en su
+   * checklist los requisitos base de su materia (también los expedientes
+   * creados antes de existir la biblioteca por materia). Solo agrega lo que
+   * falta; nunca borra ni modifica nada existente.
+   */
+  async asegurarRequisitosDeMateria(expedienteId: string, materia: MateriaJuridica): Promise<number> {
+    const plantillas = (await this.plantillaService.listarPorMateria(materia)).filter((p) => !p.condicion);
+    if (plantillas.length === 0) return 0;
+    const existentes = await this.requisitoRepo.find({ where: { expedienteId } });
+    const ids = new Set(existentes.map((e) => e.requisitoPlantillaId).filter(Boolean));
+    const codigos = new Set(existentes.map((e) => e.plantillaCodigo).filter(Boolean));
+    const nombres = new Set(existentes.map((e) => e.nombreRequisito.trim().toLowerCase()));
+    const faltantes = plantillas.filter(
+      (p) => !ids.has(p.id) && !(p.codigo && codigos.has(p.codigo)) && !nombres.has(p.nombreRequisito.trim().toLowerCase()),
+    );
+    if (faltantes.length === 0) return 0;
+    await this.requisitoRepo.save(
+      faltantes.map((p) =>
+        this.requisitoRepo.create({
+          expedienteId, requisitoPlantillaId: p.id, nombreRequisito: p.nombreRequisito,
+          descripcion: p.nota ?? p.descripcion, obligatorio: p.obligatorio, orden: p.orden,
+          estado: EstadoRequisito.PENDIENTE, origen: 'materia', plantillaCodigo: p.codigo,
+          tipo: p.tipo, categoriaDocumento: p.categoriaDocumento, aporta: p.aporta, validar: p.validar,
+        }),
+      ),
+    );
+    return faltantes.length;
+  }
+
+  /**
    * Genera o sincroniza el checklist de un expediente a partir de su servicio
    * del catálogo y su perfil (generales + requisitos del servicio cuya
    * condición se cumpla). Reglas al cambiar servicio/perfil:
