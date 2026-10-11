@@ -1,3 +1,4 @@
+import { SesionExterna } from '../auth/decorators/sesion-externa.decorator.js';
 import { Controller, Post, Body, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ColaboradorAuthService } from './colaborador-auth.service.js';
@@ -36,6 +37,7 @@ export class ColaboradorAuthController {
     return this.colaboradorAuthService.restablecer(dto.token, dto.nuevaPassword);
   }
 
+  @SesionExterna()
   @UseGuards(ColaboradorAuthGuard)
   @PermitirPasswordPendiente()
   @Post('cambiar-password')

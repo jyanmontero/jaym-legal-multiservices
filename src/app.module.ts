@@ -32,6 +32,7 @@ import { CommunityManagerModule } from './community-manager/community-manager.mo
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard.js';
+import { SoloStaffGuard } from './auth/guards/solo-staff.guard.js';
 
 @Module({
   imports: [
@@ -109,6 +110,8 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard.js';
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     // Guard global: todo endpoint exige JWT salvo los marcados con @Public().
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    // Rechaza tokens del portal/colaboradores en rutas internas (mismo JWT_SECRET).
+    { provide: APP_GUARD, useClass: SoloStaffGuard },
   ],
 })
 export class AppModule {}

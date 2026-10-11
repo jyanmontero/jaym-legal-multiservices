@@ -1,3 +1,4 @@
+import { SesionExterna } from '../auth/decorators/sesion-externa.decorator.js';
 import { Controller, Get, Param, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { ColaboradoresPortalService } from './colaboradores-portal.service.js';
@@ -5,6 +6,7 @@ import { ColaboradorAuthGuard } from './colaborador-auth.guard.js';
 import { CurrentColaborador } from './current-colaborador.decorator.js';
 
 @Controller('colaboradores-portal')
+@SesionExterna()
 @UseGuards(ColaboradorAuthGuard)
 export class ColaboradoresPortalController {
   constructor(private readonly colaboradoresPortalService: ColaboradoresPortalService) {}

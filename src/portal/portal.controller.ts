@@ -1,3 +1,4 @@
+import { SesionExterna } from '../auth/decorators/sesion-externa.decorator.js';
 import {
   Controller,
   Get,
@@ -22,6 +23,7 @@ import { opcionesMulter } from '../documentos/documentos.controller.js';
 import { CategoriaDocumento } from '../common/enums/index.js';
 
 @Controller('portal')
+@SesionExterna()
 @UseGuards(PortalAuthGuard)
 export class PortalController {
   constructor(private readonly portalDatosService: PortalDatosService) {}

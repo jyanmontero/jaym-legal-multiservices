@@ -1,3 +1,4 @@
+import { SesionExterna } from '../auth/decorators/sesion-externa.decorator.js';
 import { Controller, Post, Body, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { PortalAuthService } from './portal-auth.service.js';
@@ -30,6 +31,7 @@ export class PortalAuthController {
     return this.portalAuthService.restablecer(dto.token, dto.nuevaPassword);
   }
 
+  @SesionExterna()
   @UseGuards(PortalAuthGuard)
   @Post('cambiar-password')
   cambiarPassword(@Body() dto: CambiarPasswordPortalDto, @CurrentPortalUsuario('sub') portalUsuarioId: string) {
