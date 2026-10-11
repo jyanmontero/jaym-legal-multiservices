@@ -1,4 +1,4 @@
-import { PasswordFuerte } from '../common/validators/password-fuerte.js';
+import { PasswordFuerte } from '../../common/validators/password-fuerte.js';
 import { IsEmail, IsString, MinLength, IsOptional, Length } from 'class-validator';
 
 export class LoginDto {

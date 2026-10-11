@@ -1,4 +1,4 @@
-import { PasswordFuerte } from '../common/validators/password-fuerte.js';
+import { PasswordFuerte } from '../../common/validators/password-fuerte.js';
 import { IsEmail, IsEnum, IsString, MinLength } from 'class-validator';
 import { RolUsuario } from '../../common/enums/index.js';
 
