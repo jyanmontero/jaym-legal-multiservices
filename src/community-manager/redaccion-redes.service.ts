@@ -5,6 +5,34 @@ import { FICHA_MARCA, INFO_REDES, REDES, type RedSocial } from './ficha-marca.js
 
 const MODELO = 'claude-sonnet-5';
 
+/**
+ * Traduce el fallo de la API de IA a un mensaje claro en español para que
+ * Joseph sepa qué pasa (clave, saldo, saturación...) en vez de un genérico
+ * "inténtalo de nuevo". Nunca incluye claves ni datos internos.
+ */
+export function mensajeErrorIa(err: unknown): string {
+  const estado = (err as { status?: number })?.status;
+  const texto = String((err as Error)?.message ?? '').toLowerCase();
+  if (texto.includes('credit balance') || texto.includes('billing')) {
+    return 'La IA no tiene saldo disponible. Recarga el saldo en la cuenta de Anthropic y vuelve a intentar.';
+  }
+  if (estado === 401 || estado === 403 || texto.includes('not scoped to a workspace')) {
+    return 'La clave de la IA no es válida o no tiene permiso (revisa ANTHROPIC_API_KEY en Render).';
+  }
+  if (estado === 404) return 'El modelo de IA configurado no está disponible para esta cuenta.';
+  if (estado === 429) return 'La IA está recibiendo demasiadas solicitudes. Espera un minuto y vuelve a intentar.';
+  if (estado === 529 || (estado !== undefined && estado >= 500) || texto.includes('overloaded')) {
+    return 'El servicio de IA está saturado en este momento. Vuelve a intentar en unos minutos.';
+  }
+  if (texto.includes('timeout') || texto.includes('timed out') || texto.includes('connection')) {
+    return 'La IA tardó demasiado en responder. Prueba con menos redes o vuelve a intentar.';
+  }
+  if (texto.includes('respuesta vacía') || texto.includes('refusal')) {
+    return 'La IA no devolvió texto para este tema. Reformula el tema con más detalle o más neutral y vuelve a intentar.';
+  }
+  return 'No se pudo generar la propuesta. Intenta de nuevo en unos minutos.';
+}
+
 export interface EntradaRedaccion {
   tema: string;
   /** Texto de apoyo con los datos reales (por ejemplo, el cuerpo del artículo del blog). */
@@ -39,7 +67,7 @@ export class RedaccionRedesService {
         'El Community Manager todavía no tiene la IA activada: falta configurar ANTHROPIC_API_KEY en el backend.',
       );
     }
-    return new Anthropic({ apiKey });
+    return new Anthropic({ apiKey, timeout: 90_000, maxRetries: 2 });
   }
 
   private reglasMarca(): string {
@@ -80,6 +108,7 @@ export class RedaccionRedesService {
         system,
         messages: [{ role: 'user', content: user }],
       });
+      if (respuesta.stop_reason === 'refusal') throw new Error('refusal');
       const texto = respuesta.content
         .filter((b): b is Anthropic.TextBlock => b.type === 'text')
         .map((b) => b.text)
@@ -88,9 +117,12 @@ export class RedaccionRedesService {
       if (!texto) throw new Error('respuesta vacía');
       return texto;
     } catch (err) {
-      this.logger.error(`Error llamando a Anthropic (Community Manager): ${(err as Error).message}`);
+      const estado = (err as { status?: number })?.status;
+      this.logger.error(
+        `Error llamando a Anthropic (Community Manager): estado=${estado ?? 'n/d'} ${(err as Error).message}`,
+      );
       if (err instanceof BadRequestException) throw err;
-      throw new BadRequestException('No se pudo generar la propuesta. Intenta de nuevo en unos minutos.');
+      throw new BadRequestException(mensajeErrorIa(err));
     }
   }
 
