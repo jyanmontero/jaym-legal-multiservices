@@ -46,12 +46,31 @@ export class CorreoService {
    * integraciones opcionales de este sistema). `to` acepta un correo o
    * varios separados por coma.
    */
-  async enviar(opciones: { to: string; subject: string; html: string }): Promise<boolean> {
+  async enviar(opciones: {
+    to: string;
+    subject: string;
+    html: string;
+    attachments?: { filename: string; content: Buffer; contentType?: string }[];
+  }): Promise<boolean> {
+    const r = await this.enviarDetallado(opciones);
+    return r.ok;
+  }
+
+  /**
+   * Igual que enviar() pero devuelve el motivo del fallo (sin datos
+   * sensibles) para que quien envía vea qué pasó y quede registrado.
+   */
+  async enviarDetallado(opciones: {
+    to: string;
+    subject: string;
+    html: string;
+    attachments?: { filename: string; content: Buffer; contentType?: string }[];
+  }): Promise<{ ok: boolean; error?: string }> {
     if (!this.estaConfigurado()) {
       this.logger.warn(
         `SMTP no configurado -- no se envió el correo "${opciones.subject}". Ver .env.example (SMTP_*).`,
       );
-      return false;
+      return { ok: false, error: 'El correo saliente no está configurado (SMTP).' };
     }
     try {
       await this.obtenerTransporte().sendMail({
@@ -59,11 +78,13 @@ export class CorreoService {
         to: opciones.to,
         subject: opciones.subject,
         html: opciones.html,
+        attachments: opciones.attachments,
       });
-      return true;
+      return { ok: true };
     } catch (err) {
-      this.logger.error(`Error enviando correo "${opciones.subject}": ${(err as Error).message}`);
-      return false;
+      const mensaje = (err as Error).message;
+      this.logger.error(`Error enviando correo "${opciones.subject}": ${mensaje}`);
+      return { ok: false, error: 'El servidor de correo rechazó el envío. Revisa la configuración SMTP o el destinatario.' };
     }
   }
 }
