@@ -76,6 +76,22 @@ const ESTILOS_WP = `
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 `.trim();
 
+/**
+ * Limpia el HTML que sale del editor antes de publicarlo. Quill y los
+ * textos pegados traen espacios "no separables" (&nbsp; / U+00A0) en lugar de
+ * espacios normales: el navegador no puede partir la línea en ellos y el
+ * párrafo se sale de la columna. También quita los párrafos vacíos que dejan
+ * un hueco enorme entre párrafos.
+ */
+export function limpiarHtmlArticulo(html: string): string {
+  return html
+    .replace(/&nbsp;|&#160;|&#xa0;/gi, ' ')
+    .replace(/[\u00a0\u202f]/g, ' ')
+    .replace(/<p>\s*(?:<br\s*\/?>)?\s*<\/p>/gi, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
+
 export function construirHtmlWordpress(datos: {
   contenidoHtml: string;
   extracto?: string;
@@ -93,7 +109,7 @@ export function construirHtmlWordpress(datos: {
     `<p class="aj-kicker">Análisis jurídico · ${escaparHtml(kicker)}</p>`,
     dek,
     '<div class="aj-rule-fina" aria-hidden="true"></div>',
-    datos.contenidoHtml,
+    limpiarHtmlArticulo(datos.contenidoHtml),
     '<div class="aj-pie">',
     `<p class="aj-fname">${escaparHtml(MARCA_CORPORATIVA.razonSocial)}</p>`,
     `<p class="aj-fline">RNC ${escaparHtml(MARCA_CORPORATIVA.rnc)}</p>`,
