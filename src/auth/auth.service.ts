@@ -71,7 +71,7 @@ export class AuthService {
     await this.usuariosService.marcarUltimoAcceso(usuario.id);
     await this.usuariosService.resetearIntentosFallidos(usuario.id);
 
-    const payload = { sub: usuario.id, correo: usuario.correo, rol: usuario.rol };
+    const payload = { sub: usuario.id, correo: usuario.correo, rol: usuario.rol, tokenVersion: usuario.tokenVersion ?? 0 };
     return {
       accessToken: await this.jwtService.signAsync(payload),
       usuario: {

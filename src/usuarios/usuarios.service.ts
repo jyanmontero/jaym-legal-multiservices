@@ -224,6 +224,7 @@ export class UsuariosService {
     const anterior = await this.buscarPorId(id);
     await this.dataSource.transaction(async (manager) => {
       await manager.getRepository(Usuario).update(id, { estado });
+      await manager.getRepository(Usuario).increment({ id }, 'tokenVersion', 1);
       await this.historialCambiosService.registrarCambio(
         {
           entidadTipo: 'usuario',
@@ -247,6 +248,7 @@ export class UsuariosService {
     const passwordHash = await bcrypt.hash(nuevaPassword, SALT_ROUNDS);
     await this.dataSource.transaction(async (manager) => {
       await manager.getRepository(Usuario).update(id, { passwordHash });
+      await manager.getRepository(Usuario).increment({ id }, 'tokenVersion', 1);
       await this.historialCambiosService.registrarCambio(
         {
           entidadTipo: 'usuario',
@@ -276,5 +278,6 @@ export class UsuariosService {
   async actualizarPassword(id: string, nuevaPassword: string): Promise<void> {
     const passwordHash = await bcrypt.hash(nuevaPassword, SALT_ROUNDS);
     await this.usuarioRepo.update(id, { passwordHash });
+    await this.usuarioRepo.increment({ id }, 'tokenVersion', 1);
   }
 }

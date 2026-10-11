@@ -1,3 +1,4 @@
+import { PasswordFuerte } from '../common/validators/password-fuerte.js';
 import { IsEmail, IsString, MinLength, IsOptional, Length } from 'class-validator';
 
 export class LoginDto {
@@ -26,8 +27,7 @@ export class CambiarPasswordDto {
   @MinLength(1)
   actual: string;
 
-  @IsString()
-  @MinLength(8, { message: 'La nueva contraseña debe tener al menos 8 caracteres' })
+  @PasswordFuerte()
   nueva: string;
 }
 
@@ -41,7 +41,6 @@ export class RestablecerPasswordDto {
   @MinLength(1)
   token: string;
 
-  @IsString()
-  @MinLength(8, { message: 'La nueva contraseña debe tener al menos 8 caracteres' })
+  @PasswordFuerte()
   nuevaPassword: string;
 }

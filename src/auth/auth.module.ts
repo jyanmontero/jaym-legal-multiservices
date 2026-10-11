@@ -7,6 +7,7 @@ import { AuthService } from './auth.service.js';
 import { AuthController } from './auth.controller.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
 import { UsuariosModule } from '../usuarios/usuarios.module.js';
+import { Usuario } from '../usuarios/usuario.entity.js';
 import { PasswordResetToken } from './password-reset-token.entity.js';
 import { NotificacionesModule } from '../notificaciones/notificaciones.module.js';
 import { obtenerJwtSecretObligatorio } from '../common/config/jwt-secret.js';
@@ -15,7 +16,7 @@ import { obtenerJwtSecretObligatorio } from '../common/config/jwt-secret.js';
   imports: [
     UsuariosModule,
     NotificacionesModule,
-    TypeOrmModule.forFeature([PasswordResetToken]),
+    TypeOrmModule.forFeature([PasswordResetToken, Usuario]),
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

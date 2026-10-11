@@ -1,3 +1,4 @@
+import { PasswordFuerte } from '../common/validators/password-fuerte.js';
 import { IsEmail, IsEnum, IsString, MinLength } from 'class-validator';
 import { RolUsuario } from '../../common/enums/index.js';
 
@@ -8,8 +9,7 @@ export class CreateUsuarioDto {
   @IsEmail()
   correo: string;
 
-  @IsString()
-  @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
+  @PasswordFuerte()
   password: string;
 
   @IsEnum(RolUsuario)
@@ -17,7 +17,6 @@ export class CreateUsuarioDto {
 }
 
 export class ResetearPasswordDto {
-  @IsString()
-  @MinLength(8, { message: 'La nueva contraseña debe tener al menos 8 caracteres' })
+  @PasswordFuerte()
   nuevaPassword: string;
 }

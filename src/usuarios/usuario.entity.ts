@@ -56,6 +56,12 @@ export class Usuario {
   @Column({ type: 'int', default: 0 })
   intentosFallidosLogin: number;
 
+  // Revocacion de sesiones: el JWT lleva esta version; si cambia (nueva
+  // contrasena, restablecimiento o suspension), los tokens anteriores dejan de
+  // servir de inmediato en vez de vivir hasta su vencimiento (8 h).
+  @Column({ type: 'int', default: 0 })
+  tokenVersion: number;
+
   @Column({ type: 'timestamp', nullable: true })
   bloqueadoHastaLogin?: Date;
 
