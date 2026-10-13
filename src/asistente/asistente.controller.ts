@@ -1,5 +1,5 @@
-import { BadRequestException, Body, Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { BadRequestException, Body, Controller, Post, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { memoryStorage } from 'multer';
 import { AsistenteService, type MensajeHistorial } from './asistente.service.js';
@@ -44,17 +44,17 @@ export class AsistenteController {
   // Acepta JSON (solo texto) o multipart (texto + foto opcional).
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('mensaje')
-  @UseInterceptors(FileInterceptor('foto', opcionesFoto))
+  @UseInterceptors(FilesInterceptor('foto', 6, opcionesFoto))
   async mensaje(
     @Body() dto: MensajeAsistenteDto,
-    @UploadedFile() foto: Express.Multer.File | undefined,
+    @UploadedFiles() fotos: Express.Multer.File[] | undefined,
     @CurrentUser() usuario: JwtPayloadUsuario,
   ) {
     return this.asistenteService.procesarMensaje(
       dto.texto ?? '',
       { id: usuario.sub, rol: usuario.rol as RolUsuario },
       {
-        foto: foto ? { buffer: foto.buffer, mimetype: foto.mimetype } : undefined,
+        fotos: (fotos ?? []).map((f) => ({ buffer: f.buffer, mimetype: f.mimetype })),
         historial: parsearHistorial(dto.historial),
       },
     );

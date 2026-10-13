@@ -536,7 +536,7 @@ export class AsistenteService {
   async procesarMensaje(
     texto: string,
     usuario: UsuarioAsistente,
-    opciones: { foto?: { buffer: Buffer; mimetype: string }; historial?: MensajeHistorial[] } = {},
+    opciones: { fotos?: { buffer: Buffer; mimetype: string }[]; historial?: MensajeHistorial[] } = {},
   ): Promise<RespuestaAsistente> {
     const anthropic = this.cliente();
     const ahora = new Date();
@@ -545,12 +545,18 @@ export class AsistenteService {
     // Si viene una foto, primero se lee con el mismo lector de cédulas/pasaportes
     // del formulario de clientes; el resultado entra al chat como contexto.
     let textoUsuario = texto?.trim() ?? '';
-    if (opciones.foto) {
-      const datos = await this.extraccionIdentidad.extraerDeArchivo(opciones.foto.buffer, opciones.foto.mimetype);
-      const resumen = datos.esDocumentoIdentidad
-        ? `[El usuario adjuntó una foto. Datos leídos del documento de identidad: ${JSON.stringify(datos)}. Revisa las advertencias de lectura antes de usarlos.]`
-        : `[El usuario adjuntó una foto, pero NO parece un documento de identidad legible (${datos.advertencias || 'sin detalle'}). Pídele otra foto más clara si la necesitas.]`;
-      textoUsuario = `${resumen}\n${textoUsuario || 'Registra a esta persona como cliente.'}`;
+    if (opciones.fotos?.length) {
+      const resumenes: string[] = [];
+      for (const [i, f] of opciones.fotos.entries()) {
+        const datos = await this.extraccionIdentidad.extraerDeArchivo(f.buffer, f.mimetype);
+        resumenes.push(
+          datos.esDocumentoIdentidad
+            ? `[Foto ${i + 1}: datos leídos del documento de identidad: ${JSON.stringify(datos)}. Revisa las advertencias de lectura antes de usarlos.]`
+            : `[Foto ${i + 1}: NO parece un documento de identidad legible (${datos.advertencias || 'sin detalle'}). Pídele otra foto más clara si la necesitas.]`,
+        );
+      }
+      const varias = opciones.fotos.length > 1 ? ' Si son frente y dorso del mismo documento, combínalos; si son personas distintas, trátalas por separado.' : '';
+      textoUsuario = `${resumenes.join('\n')}${varias}\n${textoUsuario || 'Registra a esta persona como cliente.'}`;
     }
     if (!textoUsuario) throw new BadRequestException('Escribe una instrucción o adjunta una foto.');
 
