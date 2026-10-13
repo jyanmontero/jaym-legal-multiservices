@@ -10,6 +10,6 @@ import { HistorialCambiosModule } from '../historial-cambios/historial-cambios.m
   imports: [TypeOrmModule.forFeature([Cliente]), HistorialCambiosModule],
   controllers: [ClientesController],
   providers: [ClientesService, ExtraccionIdentidadService],
-  exports: [ClientesService],
+  exports: [ClientesService, ExtraccionIdentidadService],
 })
 export class ClientesModule {}

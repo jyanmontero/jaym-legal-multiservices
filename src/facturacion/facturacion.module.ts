@@ -31,6 +31,6 @@ import { ClientesModule } from '../clientes/clientes.module.js';
   ],
   controllers: [CotizacionesController, FacturasController, FacturacionController, GastosController, CobrosController],
   providers: [FacturacionService, GastosService, PdfService, CobrosService],
-  exports: [FacturacionService, GastosService, PdfService],
+  exports: [FacturacionService, GastosService, PdfService, CobrosService],
 })
 export class FacturacionModule {}
