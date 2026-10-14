@@ -109,6 +109,31 @@ export class FacturacionService {
     const aplicaItbisGeneral = dto.aplicaItbis ?? true;
     const totales = calcularTotales(dto.items, aplicaItbisGeneral, dto.descuento);
     const costoEnvio = dto.costoEnvio ?? 0;
+    const totalFinal = (Number(totales.total) + costoEnvio).toFixed(2);
+
+    // Resguardo contra doble envío (doble clic, o reintento porque el
+    // backend tardó en responder, ej. Render "despertando"): si el mismo
+    // usuario ya creó, hace menos de 2 minutos, una cotización idéntica para el
+    // mismo cliente/concepto/monto, se devuelve esa en vez de crear otra.
+    // No afecta el botón "Duplicar" (usa duplicarCotizacion, no este método)
+    // ni a dos cotizaciones legítimas distintas -- la ventana es de segundos.
+    const posibleDobleEnvio = await this.cotizacionRepo.findOne({
+      where: {
+        clienteId,
+        concepto: datosCotizacion.concepto,
+        total: totalFinal,
+        creadoPorId: usuarioId,
+      },
+      order: { creadoEn: 'DESC' },
+    });
+    if (posibleDobleEnvio) {
+      const segundosDesdeCreacion =
+        (Date.now() - new Date(posibleDobleEnvio.creadoEn).getTime()) / 1000;
+      if (segundosDesdeCreacion < 120) {
+        return posibleDobleEnvio;
+      }
+    }
+
     const numero = await this.generarNumero('COT', this.cotizacionRepo);
 
     const cotizacion = this.cotizacionRepo.create({
@@ -120,7 +145,7 @@ export class FacturacionService {
       itbis: totales.itbis,
       aplicaItbis: totales.aplicaItbis,
       costoEnvio: costoEnvio.toFixed(2),
-      total: (Number(totales.total) + costoEnvio).toFixed(2),
+      total: totalFinal,
       creadoPorId: usuarioId,
     });
     return this.cotizacionRepo.save(cotizacion);
@@ -174,17 +199,27 @@ export class FacturacionService {
   }
 
   async convertirCotizacionAFactura(id: string, usuarioId: string): Promise<Factura> {
-    const cotizacion = await this.obtenerCotizacion(id);
-    if (cotizacion.estado === EstadoCotizacion.CONVERTIDA) {
-      throw new BadRequestException('Esta cotización ya fue convertida en factura.');
-    }
-    if (cotizacion.estado !== EstadoCotizacion.ACEPTADA) {
-      throw new BadRequestException(
-        'Solo se puede facturar una cotización marcada como aceptada por el cliente.',
-      );
-    }
+    await this.obtenerCotizacion(id); // 404 si no existe
 
     return this.dataSource.transaction(async (manager) => {
+      // Se bloquea la fila de la cotización y se re-verifica el estado DENTRO
+      // de la transacción: si llegan dos clics casi a la vez, el segundo espera
+      // al primero, ve la cotización ya "convertida" y se rechaza. Antes la
+      // verificación ocurría fuera y ambos podían crear su propia factura.
+      const cotizacion = await manager.getRepository(Cotizacion).findOne({
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!cotizacion) throw new NotFoundException('Cotización no encontrada');
+      if (cotizacion.estado === EstadoCotizacion.CONVERTIDA) {
+        throw new BadRequestException('Esta cotización ya fue convertida en factura.');
+      }
+      if (cotizacion.estado !== EstadoCotizacion.ACEPTADA) {
+        throw new BadRequestException(
+          'Solo se puede facturar una cotización marcada como aceptada por el cliente.',
+        );
+      }
+
       const factura = await this.crearFacturaInterna(
         {
           clienteId: cotizacion.clienteId,
