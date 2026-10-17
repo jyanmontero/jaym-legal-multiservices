@@ -23,6 +23,7 @@ import { PortalModule } from './portal/portal.module.js';
 import { ColaboradoresModule } from './colaboradores/colaboradores.module.js';
 import { ContactoWebModule } from './contacto-web/contacto-web.module.js';
 import { FinanzasModule } from './finanzas/finanzas.module.js';
+import { ComprasModule } from './compras/compras.module.js';
 import { ConflictosModule } from './conflictos/conflictos.module.js';
 import { AnalisisJuridicoModule } from './analisis-juridico/analisis-juridico.module.js';
 import { RedaccionModule } from './redaccion/redaccion.module.js';
@@ -103,6 +104,7 @@ import { SoloStaffGuard } from './auth/guards/solo-staff.guard.js';
     ColaboradoresModule,
     ContactoWebModule,
     FinanzasModule,
+    ComprasModule,
   ],
   providers: [
     // Guard global de límite de peticiones (debe ir antes que el de JWT
