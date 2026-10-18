@@ -9,6 +9,8 @@ import {
   IsDateString,
   IsNumber,
   Min,
+  MinLength,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ItemFacturableDto } from './item-facturable.dto.js';
@@ -157,4 +159,16 @@ export class UpdateFacturaDto {
   @IsNumber()
   @Min(0)
   costoEnvio?: number;
+}
+
+export class RegistrarNcfDto {
+  @IsString()
+  @MinLength(11, { message: 'El NCF debe tener al menos 11 caracteres' })
+  @MaxLength(20)
+  ncf: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  motivo?: string;
 }

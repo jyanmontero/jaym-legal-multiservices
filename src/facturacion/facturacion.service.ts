@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, DataSource, EntityManager, In } from 'typeorm';
@@ -13,10 +14,11 @@ import { Cliente } from '../clientes/cliente.entity.js';
 import { Expediente } from '../expedientes/expediente.entity.js';
 import { ClientesService, type PosibleDuplicado } from '../clientes/clientes.service.js';
 import { CreateCotizacionDto } from './dto/cotizacion.dto.js';
-import { CreateFacturaDto, UpdateFacturaDto } from './dto/factura.dto.js';
+import { CreateFacturaDto, UpdateFacturaDto, RegistrarNcfDto } from './dto/factura.dto.js';
 import { CreatePagoDto } from './dto/pago.dto.js';
 import { calcularTotales } from './item-facturable.js';
 import { EstadoCotizacion, EstadoFactura, TipoCliente } from '../common/enums/index.js';
+import { normalizarNcf, ncfConFormatoValido } from '../compras/fiscal.util.js';
 import { HistorialCambiosService } from '../historial-cambios/historial-cambios.service.js';
 import { parsearPaginacion, type ResultadoPaginado } from '../common/paginacion/paginacion.js';
 
@@ -478,6 +480,60 @@ export class FacturacionService {
           snapshotAnterior,
           snapshotNuevo: { ...actualizada },
           usuarioId,
+        },
+        manager,
+      );
+      return actualizada;
+    });
+  }
+
+  /**
+   * Registra el NCF / e-NCF que la DGII asignó a una factura ya emitida, para
+   * que entre al reporte 607. Reglas: solo se puede registrar una vez (si ya
+   * tiene uno, la corrección se hace con nota de crédito, no reescribiendo),
+   * no se acepta en facturas anuladas ni un comprobante ya usado en otra
+   * factura, y el cambio queda en el historial (solo se agrega). El sistema
+   * NO inventa ni genera NCF: el valor lo trae la persona desde el
+   * comprobante real. No toca montos ni pagos.
+   */
+  async registrarNcf(id: string, dto: RegistrarNcfDto, usuarioId: string): Promise<Factura> {
+    const ncf = normalizarNcf(dto.ncf);
+    if (!ncfConFormatoValido(ncf)) {
+      throw new BadRequestException(
+        'El NCF no tiene un formato válido. Debe ser B + 10 dígitos (ej. B0100000001) o E + 12 dígitos (ej. E310000000001).',
+      );
+    }
+    return this.dataSource.transaction(async (manager) => {
+      const repo = manager.getRepository(Factura);
+      const factura = await repo.findOne({ where: { id } });
+      if (!factura) throw new NotFoundException('Factura no encontrada');
+      if (factura.estado === EstadoFactura.ANULADA) {
+        throw new BadRequestException('No se puede registrar un NCF en una factura anulada.');
+      }
+      if (normalizarNcf(factura.ncf)) {
+        throw new BadRequestException(
+          `Esta factura ya tiene el NCF ${factura.ncf}. Un comprobante no se reescribe: si hay un error, se corrige con una nota de crédito.`,
+        );
+      }
+      const repetida = await repo
+        .createQueryBuilder('f')
+        .where("UPPER(REPLACE(REPLACE(f.ncf, '-', ''), ' ', '')) = :ncf", { ncf })
+        .andWhere('f.id <> :id', { id })
+        .andWhere('f.estado <> :anulada', { anulada: EstadoFactura.ANULADA })
+        .getOne();
+      if (repetida) {
+        throw new ConflictException(`El NCF ${ncf} ya está registrado en la factura ${repetida.numero}.`);
+      }
+      await repo.update(id, { ncf });
+      const actualizada = (await repo.findOne({ where: { id } })) as Factura;
+      await this.historialCambiosService.registrarCambio(
+        {
+          entidadTipo: 'factura',
+          entidadId: id,
+          snapshotAnterior: { ncf: factura.ncf ?? null },
+          snapshotNuevo: { ncf },
+          usuarioId,
+          motivo: dto.motivo?.trim() || 'Registro del NCF/e-NCF de la factura',
         },
         manager,
       );

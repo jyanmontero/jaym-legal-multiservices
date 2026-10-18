@@ -21,7 +21,7 @@ import { PdfService } from './pdf/pdf.service.js';
 import { Cliente } from '../clientes/cliente.entity.js';
 import { Expediente } from '../expedientes/expediente.entity.js';
 import { CreateCotizacionDto, CambiarEstadoCotizacionDto } from './dto/cotizacion.dto.js';
-import { CreateFacturaDto, UpdateFacturaDto } from './dto/factura.dto.js';
+import { CreateFacturaDto, UpdateFacturaDto, RegistrarNcfDto } from './dto/factura.dto.js';
 import { CreatePagoDto } from './dto/pago.dto.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -158,6 +158,16 @@ export class FacturasController {
     @CurrentUser('sub') usuarioId: string,
   ) {
     return this.facturacionService.actualizarFactura(id, dto, usuarioId);
+  }
+
+  // Registra el NCF/e-NCF real de la factura (una sola vez) para el 607.
+  @Post(':id/ncf')
+  registrarNcf(
+    @Param('id') id: string,
+    @Body() dto: RegistrarNcfDto,
+    @CurrentUser('sub') usuarioId: string,
+  ) {
+    return this.facturacionService.registrarNcf(id, dto, usuarioId);
   }
 
   @Post(':id/anular')
